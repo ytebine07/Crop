@@ -17,13 +17,13 @@ execution_path = os.getcwd()
 
 # 定義系
 
-AVERAGE_FRAME = os.getenv("AVERAGE_FRAME", 3)
+AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 3))
 model_path = os.getenv(
     "MODEL_PATH", "./model/resnet50_coco_best_v2.0.1.h5")
 input_path = os.getenv("INPUT_PATH", "./data/input5/*png")
 output_path = os.getenv("OUTPUT_PATH", "./data/output/")
 c_output_path = os.getenv(
-    "C_OUTPUT_PATH", "./data/output_croped/")  # cropされた画像の出力先
+    "C_OUTPUT_PATH", "./data/output_croped")  # cropされた画像の出力先
 
 
 def main():
@@ -77,7 +77,7 @@ def main():
         #    c_output_path + os.path.basename(file), quality=100)
 
         im_crop = im.crop((hoge[0], 0, hoge[1], 1088)).save(
-            c_output_path + os.path.basename(file), quality=100)
+            c_output_path + '/' + os.path.basename(file), quality=100)
 
         frame_count += 1
         is_human = False  # 初期化
