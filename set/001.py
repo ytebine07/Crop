@@ -1,3 +1,8 @@
+"""
+001.py
+検出したオブジェクトに枠を付けて画像出力する
+"""
+
 from imageai.Detection import ObjectDetection
 import os
 import glob
