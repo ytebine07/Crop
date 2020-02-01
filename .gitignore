@@ -2,3 +2,5 @@ model/*h5
 set/input*
 set/*output*
 *mp4
+data/output
+data/output_croped
