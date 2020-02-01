@@ -110,30 +110,3 @@ def calcurate_new_position(new_positions, x1: int, x2: int, center: int, frame_c
 
 if __name__ == '__main__':
     main()
-
-
-def calcurate_new_position(new_positions, x1: int, x2: int, center: int, frame_count: int):
-
-    # 現在のフレームから遡って計算するが、フレーム数がマイナスの場合は遡り先がない。
-    # その場合は現在の座標を入れておく。
-    if (frame_count-AVERAGE_FRAME) <= 0:
-        return [x1, x2, center]
-
-    # 新しいcenterを計算する
-    new_centers = []
-    saka = frame_count - AVERAGE_FRAME
-    for i in range(saka, frame_count):
-        new_centers.append(new_positions[i][2])
-
-    s = sum(new_centers)
-    n = len(new_centers)
-    new_center = s//n
-
-    nx1 = new_center - (612//2)
-    nx2 = new_center + (612//2)
-
-    return [nx1, nx2, new_center]
-
-
-if __name__ == '__main__':
-    main()
