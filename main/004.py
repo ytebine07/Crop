@@ -6,6 +6,7 @@ from PIL import Image
 import tqdm
 import glob
 import os
+import requests
 from imageai.Detection import ObjectDetection
 import sys
 from tqdm import tqdm
@@ -24,6 +25,7 @@ input_path = os.getenv("INPUT_PATH", "./data/input5/*png")
 output_path = os.getenv("OUTPUT_PATH", "./data/output/")
 c_output_path = os.getenv(
     "C_OUTPUT_PATH", "./data/output_croped")  # cropされた画像の出力先
+SLACK = os.getenv("SLACK", False)
 
 
 def main():
@@ -108,5 +110,14 @@ def calcurate_new_position(new_positions, x1: int, x2: int, center: int, frame_c
     return [nx1, nx2, new_center]
 
 
+def slack_notify(msg='おわったよ'):
+    if SLACK:
+        slack_user_id = os.getenv("SLACK_USER_ID", "")
+        slack_webhook_url = os.getenv("SLACK_WEBHOOK_URL", "")
+        requests.post(slack_webhook_url, json={
+            "text": f"<@{slack_user_id}> {msg}"})
+
+
 if __name__ == '__main__':
     main()
+    slack_notify()
