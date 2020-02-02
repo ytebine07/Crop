@@ -18,7 +18,7 @@ execution_path = os.getcwd()
 
 # 定義系
 
-AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 3))
+AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 15))
 model_path = os.getenv(
     "MODEL_PATH", "./model/resnet50_coco_best_v2.0.1.h5")
 input_path = os.getenv("INPUT_PATH", "./data/input5/*png")
@@ -43,6 +43,11 @@ def main():
             input_path), os.path.basename(file))
         output_image_path = os.path.join(
             execution_path, output_path, os.path.basename(file))
+
+        # すでに作成済みファイルが有れば飛ばす(高速化のため)
+        if os.path.isfile(output_image_path):
+            continue
+
         # ここでオブジェクト判別 & 画像書き出し
         detections = detector.detectObjectsFromImage(
             input_image=input_image, output_image_path=output_image_path)
