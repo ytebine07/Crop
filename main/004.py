@@ -18,7 +18,7 @@ execution_path = os.getcwd()
 
 # 定義系
 
-AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 15))
+AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 30))
 model_path = os.getenv(
     "MODEL_PATH", "./model/resnet50_coco_best_v2.0.1.h5")
 input_path = os.getenv("INPUT_PATH", "./data/input5/*png")
@@ -39,7 +39,7 @@ def main():
     frame_count = 0
     is_human = False
     positions = []
-    for file in tqdm(glob.glob(input_path)):
+    for file in tqdm(glob.glob(input_path), desc="画像解析"):
         input_image = os.path.join(execution_path, os.path.dirname(
             input_path), os.path.basename(file))
         output_image_path = os.path.join(
@@ -76,11 +76,22 @@ def main():
             positions.append(new_position)
 
         # cropファイルの切り出し
-        Image.open(file).crop((new_position[0], 0, new_position[1], 1088)).save(
-            croped_output_image_path, quality=100)
+        # TODO : ファイル操作は後でまとめてやったほうが早いかも
+        # Image.open(file).crop((new_position[0], 0, new_position[1], 1088)).save(
+        #     croped_output_image_path, quality=100)
 
         frame_count += 1
         is_human = False  # 初期化
+
+    fc = 0
+    for file in tqdm(glob.glob(input_path), desc="ファイル書き出し"):
+        p = positions[fc]
+        croped_output_image_path = os.path.join(execution_path,
+                                                c_output_path, os.path.basename(file))
+        # ここで書き出し
+        Image.open(file).crop((p[0], 0, p[1], 1088)).save(
+            croped_output_image_path, quality=100)
+        fc += 1
 
     f = open(positions_path, 'w')
     f_count = 1
