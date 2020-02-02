@@ -25,6 +25,7 @@ input_path = os.getenv("INPUT_PATH", "./data/input5/*png")
 output_path = os.getenv("OUTPUT_PATH", "./data/output/")
 c_output_path = os.getenv(
     "C_OUTPUT_PATH", "./data/output_croped")  # cropされた画像の出力先
+positions_path = os.getenv("POSITIONS_PATH", "./positions.txt")
 SLACK = os.getenv("SLACK", False)
 
 
@@ -80,6 +81,14 @@ def main():
 
         frame_count += 1
         is_human = False  # 初期化
+
+    f = open(positions_path, 'w')
+    f_count = 1
+    for line in positions:
+        a = "{0},{1},{2},{3}\n".format(f_count, line[0], line[1], line[2])
+        f.write(a)
+        f_count += 1
+    f.close
 
 
 def calcurate_new_position(new_positions, x1: int, x2: int, center: int, frame_count: int):
