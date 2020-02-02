@@ -33,7 +33,7 @@ def main():
     detector = ObjectDetection()
     detector.setModelTypeAsRetinaNet()
     detector.setModelPath(model_path)
-    detector.loadModel()
+    detector.loadModel(detection_speed='fastest')
 
     frame_count = 0
     is_human = False
@@ -54,7 +54,7 @@ def main():
 
         # 複数のオブジェクトを検出する可能性があるのでforで回す
         for d in detections:
-            if d["name"] == "person" and d["percentage_probability"] > 90:
+            if d["name"] == "person" and d["percentage_probability"] > 80:
                 is_human = True
                 x1 = d["box_points"][0]
                 y1 = d["box_points"][1]
