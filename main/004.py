@@ -48,12 +48,12 @@ def main():
         if os.path.isfile(output_image_path):
             continue
 
-        # ここでオブジェクト判別 & 画像書き出し
+        # ここでオブジェクト判別
         detections = detector.detectObjectsFromImage(
-            input_image=input_image, output_image_path=output_image_path)
+            input_image=input_image, output_image_path=output_image_path, output_type='array')
 
         # 複数のオブジェクトを検出する可能性があるのでforで回す
-        for d in detections:
+        for d in detections[1]:
             if d["name"] == "person" and d["percentage_probability"] > 80:
                 is_human = True
                 x1 = d["box_points"][0]
