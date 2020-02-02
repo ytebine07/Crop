@@ -37,16 +37,14 @@ def main():
 
     frame_count = 0
     is_human = False
-    new_positions = []
+    positions = []
     for file in tqdm(glob.glob(input_path)):
         input_image = os.path.join(execution_path, os.path.dirname(
             input_path), os.path.basename(file))
         output_image_path = os.path.join(
             execution_path, output_path, os.path.basename(file))
-
-        # すでに作成済みファイルが有れば飛ばす(高速化のため)
-        if os.path.isfile(output_image_path):
-            continue
+        croped_output_image_path = os.path.join(execution_path,
+                                                c_output_path, os.path.basename(file))
 
         # ここでオブジェクト判別
         detections = detector.detectObjectsFromImage(
@@ -65,26 +63,20 @@ def main():
                 nx1 = center - (612//2)
                 nx2 = center + (612//2)
 
-                hoge = calcurate_new_position(
-                    new_positions, nx1, nx2, center, frame_count)
+                new_position = calcurate_new_position(
+                    positions, nx1, nx2, center, frame_count)
 
                 # 座標を保存
-                # new_positions.append([nx1, nx2, center])
-                new_positions.append(hoge)
+                positions.append(new_position)
 
         # フレーム中に人間を検出出来なかったら
         # 1コマ前に検出された座標を入れておく(nx1,nx2に入ったままになっている)
         if is_human == False:
-            # new_positions.append([nx1, nx2, center])
-            new_positions.append(hoge)
+            positions.append(new_position)
 
         # cropファイルの切り出し
-        im = Image.open(file)
-        # im_crop = im.crop((nx1, 0, nx2, 1088)).save(
-        #    c_output_path + os.path.basename(file), quality=100)
-
-        im_crop = im.crop((hoge[0], 0, hoge[1], 1088)).save(
-            c_output_path + '/' + os.path.basename(file), quality=100)
+        Image.open(file).crop((new_position[0], 0, new_position[1], 1088)).save(
+            croped_output_image_path, quality=100)
 
         frame_count += 1
         is_human = False  # 初期化
