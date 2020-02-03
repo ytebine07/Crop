@@ -141,4 +141,3 @@ def slack_notify(msg='おわったよ'):
 
 if __name__ == '__main__':
     main()
-    slack_notify()
