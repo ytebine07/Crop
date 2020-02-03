@@ -18,10 +18,10 @@ execution_path = os.getcwd()
 
 # 定義系
 
-AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 30))
+AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 5))
 model_path = os.getenv(
     "MODEL_PATH", "./model/resnet50_coco_best_v2.0.1.h5")
-input_path = os.getenv("INPUT_PATH", "./data/input5/*png")
+input_path = os.getenv("INPUT_PATH", "./data/input/*png")
 output_path = os.getenv("OUTPUT_PATH", "./data/output/")
 c_output_path = os.getenv(
     "C_OUTPUT_PATH", "./data/output_croped")  # cropされた画像の出力先
@@ -34,7 +34,7 @@ def main():
     detector = ObjectDetection()
     detector.setModelTypeAsRetinaNet()
     detector.setModelPath(model_path)
-    detector.loadModel(detection_speed='fastest')
+    detector.loadModel(detection_speed='normal')
 
     frame_count = 0
     is_human = False
@@ -69,6 +69,10 @@ def main():
 
                 # 座標を保存
                 positions.append(new_position)
+            else:
+                print("nohuman frame : " + str(frame_count))
+                per = d["name"] == "persion"
+                ritu = d["percentage_probability"] > 80
 
         # フレーム中に人間を検出出来なかったら
         # 1コマ前に検出された座標を入れておく(nx1,nx2に入ったままになっている)
@@ -110,7 +114,7 @@ def calcurate_new_position(new_positions, x1: int, x2: int, center: int, frame_c
         return [x1, x2, center]
 
     # 新しいcenterを計算する
-    new_centers = []
+    new_centers = [center]
     saka = frame_count - AVERAGE_FRAME
     for i in range(saka, frame_count):
         new_centers.append(new_positions[i][2])
