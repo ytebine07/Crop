@@ -107,3 +107,7 @@ def main():
         f.write(a)
         f_count += 1
     f.close
+
+
+if __name__ == '__main__':
+    main()
