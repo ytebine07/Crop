@@ -20,6 +20,8 @@ execution_path = os.getcwd()
 # 定義系
 
 AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 5))
+QUALITY = os.getenv("QUALITY", 'fastest')
+
 model_path = os.getenv(
     "MODEL_PATH", "./model/resnet50_coco_best_v2.0.1.h5")
 input_path = os.getenv("INPUT_PATH", "./data/input5/*png")
@@ -32,11 +34,15 @@ SLACK = os.getenv("SLACK", False)
 
 def main():
 
+    print("-----------------------------------------------------")
+    print("AVERAGE FLAME : " + str(AVERAGE_FRAME))
+    print("QUALITY       : " + QUALITY)
+    print("-----------------------------------------------------")
+
     detector = ObjectDetection()
     detector.setModelTypeAsRetinaNet()
     detector.setModelPath(model_path)
-    # detector.loadModel(detection_speed='normal')
-    detector.loadModel(detection_speed='fastest')
+    detector.loadModel(detection_speed=QUALITY)
 
     frame_count = 0
     is_human = False
