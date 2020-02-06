@@ -108,8 +108,8 @@ def main():
 
     f = open(positions_path, 'w')
     f_count = 1
-    for line in positions:
-        a = "{0},{1},{2},{3}\n".format(f_count, line[0], line[1], line[2])
+    for line in y3:
+        a = "{0},{1}\n".format(f_count, int(line))
         f.write(a)
         f_count += 1
     f.close
