@@ -8,3 +8,4 @@ data/input
 positions.txt
 positions*txt
 graph.png
+__pycache__
