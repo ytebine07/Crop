@@ -17,10 +17,13 @@ def main():
     yyy = conv.calculate()
 
     plt.figure(figsize=(20, 5), dpi=100)
-    plt.xticks([0, 10, 20, 30, 40, 50, 60, 70, 80, 90])
+    plt.xticks([0, 5, 10, 15, 20, 25, 30, 35, 40,
+                45, 50, 55, 60, 65, 70, 75, 80, 85, 90])
 
     plt.xlabel("seconds")
     plt.ylabel("center-position")
+
+    plt.grid(axis='x', which="major")
 
     plt.plot(x, y, label='original', color="blue")
     plt.plot(xx, yy, label='average-60', color="orange")
