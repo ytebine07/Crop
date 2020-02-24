@@ -7,7 +7,7 @@ def get_x_y(path):
     y = []
     with open(path) as f:
         for f_line in f:
-            x.append(f_line.split(',')[0])
+            x.append(int(f_line.split(',')[0])/60)
             y.append(int(f_line.split(',')[1].strip()))
 
     return x, y
@@ -21,7 +21,10 @@ xx, yy = get_x_y(path_normal)
 
 
 plt.figure(figsize=(20, 5), dpi=100)
-plt.xticks([0, 600, 1200, 1800, 2400, 3000, 3600, 4200, 4800, 5400, 6000])
+plt.xticks([0, 10, 20, 30, 40, 50, 60, 70, 80, 90])
+
+plt.xlabel("seconds")
+plt.ylabel("center-position")
 
 plt.plot(x, y, label='fastest', color="blue")
 plt.plot(xx, yy, label='normal', color="orange")
