@@ -88,7 +88,6 @@ def main():
         f.write(a)
         f_count += 1
     f.close
-    return
 
     # 移動平均の算出
     # @see https://deepage.net/features/numpy-convolve.html
