@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 def main():
     common = Common()
 
-    file_path = "./positions_fastest.txt"
+    file_path = "./positions.txt"
     x, y = common.get_x_y(file_path)
 
     xx, yy = common.get_x_y(file_path)

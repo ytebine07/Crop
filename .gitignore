@@ -4,6 +4,7 @@ set/*output*
 *mp4
 data/output
 data/output_croped
+data/input*
 data/input
 positions.txt
 positions*txt

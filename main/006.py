@@ -19,12 +19,12 @@ execution_path = os.getcwd()
 
 # 定義系
 
-AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 5))
+AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 45))
 QUALITY = os.getenv("QUALITY", 'fastest')
 
 model_path = os.getenv(
     "MODEL_PATH", "./model/resnet50_coco_best_v2.0.1.h5")
-input_path = os.getenv("INPUT_PATH", "./data/input5/*png")
+input_path = os.getenv("INPUT_PATH", "./data/input2/*png")
 output_path = os.getenv("OUTPUT_PATH", "./data/output/")
 c_output_path = os.getenv(
     "C_OUTPUT_PATH", "./data/output_croped")  # cropされた画像の出力先
@@ -47,6 +47,7 @@ def main():
     frame_count = 0
     is_human = False
     original_centers = []
+    center = 960
     for file in tqdm(glob.glob(input_path), desc="画像解析"):
         input_image = os.path.join(execution_path, os.path.dirname(
             input_path), os.path.basename(file))
