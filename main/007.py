@@ -1,6 +1,6 @@
 """
 007.py
-ファイルから座標情報を利用する
+フォルダ構成変更
 """
 from PIL import Image
 import numpy as np
@@ -19,46 +19,110 @@ execution_path = os.getcwd()
 
 # 定義系
 
-AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 5))
+AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 30))
 QUALITY = os.getenv("QUALITY", 'fastest')
 
 model_path = os.getenv(
     "MODEL_PATH", "./model/resnet50_coco_best_v2.0.1.h5")
-input_path = os.getenv("INPUT_PATH", "./data/input/*png")
-output_path = os.getenv("OUTPUT_PATH", "./data/output/")
+base_dir = os.getenv("BASE_DIR", "./data/set/")
+input_path = os.getenv("INPUT_PATH", base_dir + "./image/*png")
+output_path = os.getenv("OUTPUT_PATH", base_dir + "./image2/")
 c_output_path = os.getenv(
-    "C_OUTPUT_PATH", "./data/output_croped")  # cropされた画像の出力先
-positions_path = os.getenv("POSITIONS_PATH", "./positions.txt")
+    "C_OUTPUT_PATH", base_dir + "./croped/")  # cropされた画像の出力先
+positions_path = os.getenv("POSITIONS_PATH", base_dir + "./positions.txt")
 SLACK = os.getenv("SLACK", False)
 
 
 def main():
 
-    common = Common()
-    file_path = "./positions_fastest.txt"
-    x, y = common.get_x_y(file_path)
+    detector = ObjectDetection()
+    detector.setModelTypeAsRetinaNet()
+    detector.setModelPath(model_path)
+    detector.loadModel(detection_speed=QUALITY)
 
-    conv = Convolve(30, y)
-    y = conv.calculate()
+    print("-----------------------------------------------------")
+    print("AVERAGE FLAME : " + str(AVERAGE_FRAME))
+    print("QUALITY       : " + QUALITY)
+    print("-----------------------------------------------------")
+
+    frame_count = 0
+    is_human = False
+    original_centers = []
+    center = 960
+    for file in tqdm(glob.glob(input_path), desc="画像解析"):
+        input_image = os.path.join(execution_path, os.path.dirname(
+            input_path), os.path.basename(file))
+        output_image_path = os.path.join(
+            execution_path, output_path, os.path.basename(file))
+
+        # ここでオブジェクト判別
+        detections = detector.detectObjectsFromImage(
+            input_image=input_image, output_image_path=output_image_path, output_type='array')
+
+        # 複数のオブジェクトを検出する可能性があるのでforで回す
+        for d in detections[1]:
+            if d["name"] == "person" and d["percentage_probability"] > 80:
+                is_human = True
+                x1 = d["box_points"][0]
+                x2 = d["box_points"][2]
+                center = (x1 + x2) // 2
+
+                # 座標を保存
+                original_centers.append(center)
+            else:
+                pass
+                #print("nohuman frame : " + str(frame_count))
+                #per = d["name"] == "persion"
+                #ritu = d["percentage_probability"] > 80
+
+        # フレーム中に人間を検出出来なかったら
+        # 1コマ前に検出された座標を入れておく(nx1,nx2に入ったままになっている)
+        if is_human == False:
+            original_centers.append(center)
+
+        frame_count += 1
+        is_human = False  # 初期化
+
+    f = open(positions_path, 'w')
+    f_count = 1
+    for line in original_centers:
+        a = "{0},{1}\n".format(f_count, int(line))
+        f.write(a)
+        f_count += 1
+    f.close
+
+    # 移動平均の算出
+    # @see https://deepage.net/features/numpy-convolve.html
+    v = np.ones(AVERAGE_FRAME)/AVERAGE_FRAME
+    y3 = np.convolve(original_centers, v, mode='valid')
 
     fc = 0
     for file in tqdm(glob.glob(input_path), desc="ファイル書き出し"):
         croped_output_image_path = os.path.join(execution_path,
                                                 c_output_path, os.path.basename(file))
 
-        n1 = y[fc] - (612//2)
-        n2 = y[fc] + (612//2)
+        # フレーム数に対して移動平均は足りないので、帳尻合わせる
+        if fc >= len(y3):
+            c = int(y3[len(y3)-1])
+        else:
+            c = int(y3[fc])
 
-        # ここで画像ファイルをcrop
+        n1 = c - (612//2)
+        n2 = c + (612//2)
+
+        # ここで書き出し
         Image.open(file).crop((n1, 0, n2, 1088)).save(
             croped_output_image_path, quality=100)
         fc += 1
 
+    f = open(positions_path, 'w')
+    f_count = 1
+    for line in y3:
+        a = "{0},{1}\n".format(f_count, int(line))
+        f.write(a)
+        f_count += 1
+    f.close
+
 
 if __name__ == '__main__':
-    import os
-    import sys
-    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-    from utils import Convolve, Common
-
     main()

@@ -5,20 +5,30 @@ import matplotlib.pyplot as plt
 def main():
     common = Common()
 
-    file_path = "./positions.txt"
+    file_path = "./data/set/positions.txt"
+    # file_path = "./positions.txt"
+
+    # grapth1(original)
     x, y = common.get_x_y(file_path)
 
+    # graph2
     xx, yy = common.get_x_y(file_path)
     conv = Convolve(60, yy)
     yy = conv.calculate()
 
+    # graph3
     xxx, yyy = common.get_x_y(file_path)
     conv = Convolve(30, yyy)
     yyy = conv.calculate()
 
+    # calculate xticks
+    xticks = []
+    for i in range(len(x)//60):
+        if i % 5 == 0:
+            xticks.append(i)
+
     plt.figure(figsize=(20, 5), dpi=100)
-    plt.xticks([0, 5, 10, 15, 20, 25, 30, 35, 40,
-                45, 50, 55, 60, 65, 70, 75, 80, 85, 90])
+    plt.xticks(xticks)
 
     plt.xlabel("seconds")
     plt.ylabel("center-position")
@@ -30,7 +40,7 @@ def main():
     plt.plot(xxx, yyy, label='average-30', color="green")
 
     plt.legend()
-    plt.savefig("graph.png")
+    plt.savefig("./data/set/graph.png")
 
 
 if __name__ == '__main__':

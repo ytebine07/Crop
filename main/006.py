@@ -19,7 +19,7 @@ execution_path = os.getcwd()
 
 # 定義系
 
-AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 45))
+AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 30))
 QUALITY = os.getenv("QUALITY", 'fastest')
 
 model_path = os.getenv(
