@@ -24,7 +24,7 @@ QUALITY = os.getenv("QUALITY", 'fastest')
 
 model_path = os.getenv(
     "MODEL_PATH", "./model/resnet50_coco_best_v2.0.1.h5")
-base_dir = os.getenv("BASE_DIR", "./data/set/")
+base_dir = os.getenv("BASE_DIR", "./data/set2/")
 input_path = os.getenv("INPUT_PATH", base_dir + "./image/*png")
 output_path = os.getenv("OUTPUT_PATH", base_dir + "./image2/")
 c_output_path = os.getenv(
