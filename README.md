@@ -3,8 +3,7 @@ Crop out a landscape video and make it a virtical video. Automatically crop out 
 
 Easy to watch on smartphone.
 
-<img src="resources/original.gif" alt="Original" height="200">
-<img src="resources/croped.gif" alt="Croped" height="200">
+<img src="resources/original.gif" alt="Original" height="200"> <img src="resources/croped.gif" alt="Croped" height="200">
 
 ## Requirements
 * Python 3.6.10
@@ -50,18 +49,18 @@ Set Original Video
 $ mv original.mp4 data/input.mp4
 ```
 
-### Convert
-#### Create images and sound file from original video.
+## Convert
+### Create images and sound file from original video.
 ```
 $ bash scripts/002_createResource.sh
 ```
 
-#### Crop images using AI :)
+### Crop images using AI :)
 ```
 $ python main/007.py
 ```
 
-#### Create croped video from croped images and original sound
+### Create croped video from croped images and original sound
 ```
 $ bash scripts/003_finalize.sh
 ```
