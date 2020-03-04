@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 def main():
     common = Common()
 
-    file_path = "./data/set/positions.txt"
+    file_path = "./data/positions.txt"
     # file_path = "./positions.txt"
 
     # grapth1(original)

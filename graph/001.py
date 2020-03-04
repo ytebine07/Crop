@@ -13,21 +13,26 @@ def get_x_y(path):
     return x, y
 
 
-path_fastest = "./positions_fastest.txt"
+path_fastest = "./data/set2/positions.txt"
 x, y = get_x_y(path_fastest)
 
-path_normal = "./positions_normal.txt"
+path_normal = "./original_positions.txt"
 xx, yy = get_x_y(path_normal)
 
+# calculate xticks
+xticks = []
+for i in range(len(x)//60):
+    if i % 5 == 0:
+        xticks.append(i)
 
 plt.figure(figsize=(20, 5), dpi=100)
-plt.xticks([0, 10, 20, 30, 40, 50, 60, 70, 80, 90])
+plt.xticks(xticks)
 
 plt.xlabel("seconds")
 plt.ylabel("center-position")
 
-plt.plot(x, y, label='fastest', color="blue")
-plt.plot(xx, yy, label='normal', color="orange")
+plt.plot(x, y, label='local', color="blue")
+plt.plot(xx, yy, label='colab', color="orange")
 
 plt.legend()
-plt.savefig("graph.png")
+plt.savefig("graph2.png")

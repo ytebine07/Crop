@@ -19,24 +19,31 @@ execution_path = os.getcwd()
 
 # 定義系
 
-AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 5))
+AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 30))
 QUALITY = os.getenv("QUALITY", 'fastest')
 
 model_path = os.getenv(
     "MODEL_PATH", "./model/resnet50_coco_best_v2.0.1.h5")
-input_path = os.getenv("INPUT_PATH", "./data/input/*png")
-output_path = os.getenv("OUTPUT_PATH", "./data/output/")
-c_output_path = os.getenv(
-    "C_OUTPUT_PATH", "./data/output_croped")  # cropされた画像の出力先
-positions_path = os.getenv("POSITIONS_PATH", "./positions.txt")
+# input_path = os.getenv("INPUT_PATH", "./data/input/*png")
+# output_path = os.getenv("OUTPUT_PATH", "./data/output/")
+# c_output_path = os.getenv(
+#     "C_OUTPUT_PATH", "./data/output_croped")  # cropされた画像の出力先
+# positions_path = os.getenv("POSITIONS_PATH", "./positions.txt")
 SLACK = os.getenv("SLACK", False)
 file_path = "./positions_fastest.txt"
+
+base_dir = os.getenv("BASE_DIR", "./data/set6/")
+input_path = os.getenv("INPUT_PATH", base_dir + "./image/*png")
+output_path = os.getenv("OUTPUT_PATH", base_dir + "./image2/")
+c_output_path = os.getenv(
+    "C_OUTPUT_PATH", base_dir + "./croped/")  # cropされた画像の出力先
+positions_path = os.getenv("POSITIONS_PATH", base_dir + "./positions.txt")
 
 
 def main():
 
     print("--------------------------------")
-    print("AVERAGE_FLAME : " + AVERAGE_FRAME)
+    print("AVERAGE_FLAME : " + str(AVERAGE_FRAME))
     print("input file    : " + file_path)
     print("--------------------------------")
 
@@ -55,7 +62,7 @@ def main():
         n2 = y[fc] + (612//2)
 
         # ここで画像ファイルをcrop
-        Image.open(file).crop((n1, 0, n2, 1088)).save(
+        Image.open(file).crop((n1, 0, n2, 1080)).save(
             croped_output_image_path, quality=100)
         fc += 1
 

@@ -29,6 +29,10 @@
 
 	// Add the IDs of extensions you want installed when the container is created in the array below.
 	"extensions": [
-		"ms-python.python"
+		"ms-python.python",
+		"coenraads.bracket-pair-colorizer-2",
+		"ibm.output-colorizer",
+		"oderwat.indent-rainbow",
+		"mutantdino.resourcemonitor"
 	]
 }

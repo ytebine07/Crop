@@ -2,6 +2,7 @@
 007.py
 フォルダ構成変更
 """
+import tensorflow as tf
 from PIL import Image
 import numpy as np
 import tqdm
@@ -17,6 +18,8 @@ sys.path.append('/usr/local/lib/python36.zip')
 sys.path.append('/usr/local/lib/python3.6')
 execution_path = os.getcwd()
 
+tf.logging.set_verbosity(tf.logging.ERROR)
+
 # 定義系
 
 AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 30))
@@ -24,13 +27,12 @@ QUALITY = os.getenv("QUALITY", 'fastest')
 
 model_path = os.getenv(
     "MODEL_PATH", "./model/resnet50_coco_best_v2.0.1.h5")
-base_dir = os.getenv("BASE_DIR", "./data/set2/")
-input_path = os.getenv("INPUT_PATH", base_dir + "./image/*png")
+base_dir = os.getenv("BASE_DIR", "./data/set/")
+input_path = os.getenv("INPUT_PATH", base_dir + "/set/images/*png")
 output_path = os.getenv("OUTPUT_PATH", base_dir + "./image2/")
 c_output_path = os.getenv(
-    "C_OUTPUT_PATH", base_dir + "./croped/")  # cropされた画像の出力先
-positions_path = os.getenv("POSITIONS_PATH", base_dir + "./positions.txt")
-SLACK = os.getenv("SLACK", False)
+    "C_OUTPUT_PATH", base_dir + "/set/croped/")  # cropされた画像の出力先
+positions_path = os.getenv("POSITIONS_PATH", base_dir + "/positions.txt")
 
 
 def main():
@@ -49,7 +51,7 @@ def main():
     is_human = False
     original_centers = []
     center = 960
-    for file in tqdm(glob.glob(input_path), desc="画像解析"):
+    for file in tqdm(sorted(glob.glob(input_path)), desc="画像解析"):
         input_image = os.path.join(execution_path, os.path.dirname(
             input_path), os.path.basename(file))
         output_image_path = os.path.join(
@@ -97,7 +99,7 @@ def main():
     y3 = np.convolve(original_centers, v, mode='valid')
 
     fc = 0
-    for file in tqdm(glob.glob(input_path), desc="ファイル書き出し"):
+    for file in tqdm(sorted(glob.glob(input_path)), desc="ファイル書き出し"):
         croped_output_image_path = os.path.join(execution_path,
                                                 c_output_path, os.path.basename(file))
 
@@ -111,7 +113,7 @@ def main():
         n2 = c + (612//2)
 
         # ここで書き出し
-        Image.open(file).crop((n1, 0, n2, 1088)).save(
+        Image.open(file).crop((n1, 0, n2, 1080)).save(
             croped_output_image_path, quality=100)
         fc += 1
 

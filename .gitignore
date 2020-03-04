@@ -1,13 +1,9 @@
+# files
 model/*h5
-set/input*
-set/*output*
 *mp4
-data/output
-data/output_croped
-data/input*
-data/input
-data/set*
-positions.txt
-positions*txt
-graph.png
+*png
+
+
+# dirs
 __pycache__
+data/
