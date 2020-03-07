@@ -73,17 +73,16 @@ def main():
                 original_centers.append(center)
             else:
                 pass
-                #print("nohuman frame : " + str(frame_count))
-                #per = d["name"] == "persion"
-                #ritu = d["percentage_probability"] > 80
+                # print("nohuman frame : " + str(frame_count))
+                # per = d["name"] == "persion"
+                # ritu = d["percentage_probability"] > 80
 
-        # フレーム中に人間を検出出来なかったら
-        # 1コマ前に検出された座標を入れておく(nx1,nx2に入ったままになっている)
+        # フレーム中に人間を検出出来なかったら、1コマ前に検出された座標を入れておく
         if is_human == False:
             original_centers.append(center)
 
         frame_count += 1
-        is_human = False  # 初期化
+        is_human = False
 
     f = open(positions_path, 'w')
     f_count = 1
@@ -94,37 +93,28 @@ def main():
     f.close
 
     # 移動平均の算出
-    # @see https://deepage.net/features/numpy-convolve.html
-    v = np.ones(AVERAGE_FRAME)/AVERAGE_FRAME
-    y3 = np.convolve(original_centers, v, mode='valid')
+    conv = Convolve(AVERAGE_FRAME, original_centers)
+    y3 = conv.calculate()
 
     fc = 0
     for file in tqdm(sorted(glob.glob(input_path)), desc="ファイル書き出し"):
         croped_output_image_path = os.path.join(execution_path,
-                                                c_output_path, os.path.basename(file))
+                                                c_output_path,
+                                                os.path.basename(file))
 
-        # フレーム数に対して移動平均は足りないので、帳尻合わせる
-        if fc >= len(y3):
-            c = int(y3[len(y3)-1])
-        else:
-            c = int(y3[fc])
+        n1 = y3[fc] - (612//2)
+        n2 = y3[fc] + (612//2)
 
-        n1 = c - (612//2)
-        n2 = c + (612//2)
-
-        # ここで書き出し
+        # ここで画像書き出し
         Image.open(file).crop((n1, 0, n2, 1080)).save(
             croped_output_image_path, quality=100)
         fc += 1
 
-    # f = open(positions_path, 'w')
-    # f_count = 1
-    # for line in y3:
-    #     a = "{0},{1}\n".format(f_count, int(line))
-    #     f.write(a)
-    #     f_count += 1
-    # f.close
-
 
 if __name__ == '__main__':
+    import os
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from utils import Convolve, Common
+
     main()

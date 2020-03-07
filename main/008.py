@@ -3,12 +3,8 @@
 ファイルから座標情報を利用する
 """
 from PIL import Image
-import numpy as np
-import tqdm
 import glob
 import os
-import requests
-from imageai.Detection import ObjectDetection
 import sys
 from tqdm import tqdm
 sys.path.append('/usr/local/lib/python3.6/lib-dynload')
@@ -18,8 +14,7 @@ sys.path.append('/usr/local/lib/python3.6')
 execution_path = os.getcwd()
 
 # 定義系
-
-AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 120))
+AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 60))
 QUALITY = os.getenv("QUALITY", 'fastest')
 file_path = "/tmp/positions.txt"
 
@@ -41,18 +36,19 @@ def main():
     print("--------------------------------")
 
     common = Common()
-    x, y = common.get_x_y(file_path)
+    _, y = common.get_x_y(file_path)
 
     conv = Convolve(AVERAGE_FRAME, y)
-    y = conv.calculate()
+    y2 = conv.calculate()
 
     fc = 0
     for file in tqdm(sorted(glob.glob(input_path)), desc="ファイル書き出し"):
         croped_output_image_path = os.path.join(execution_path,
-                                                c_output_path, os.path.basename(file))
+                                                c_output_path,
+                                                os.path.basename(file))
 
-        n1 = y[fc] - (612//2)
-        n2 = y[fc] + (612//2)
+        n1 = y2[fc] - (612//2)
+        n2 = y2[fc] + (612//2)
 
         # ここで画像ファイルをcrop
         Image.open(file).crop((n1, 0, n2, 1080)).save(
@@ -61,7 +57,6 @@ def main():
 
 
 if __name__ == '__main__':
-    import os
     import sys
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
     from utils import Convolve, Common
