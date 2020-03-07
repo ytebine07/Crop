@@ -1,10 +1,10 @@
 def main():
-    path = "./positions_fastest.txt"
+    path = "/tmp/positions.txt"
     c = Common()
     x, y = c.get_x_y(path)
 
     target = Convolve(60, y)
-    print(target.calculate())
+    print(target.calculate2())
 
 
 if __name__ == '__main__':

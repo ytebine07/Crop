@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 def main():
     common = Common()
 
-    file_path = "./data/positions.txt"
+    file_path = "/tmp/positions.txt"
     # file_path = "./positions.txt"
 
     # grapth1(original)
@@ -18,7 +18,7 @@ def main():
 
     # graph3
     xxx, yyy = common.get_x_y(file_path)
-    conv = Convolve(30, yyy)
+    conv = Convolve(120, yyy)
     yyy = conv.calculate()
 
     # calculate xticks
@@ -37,10 +37,10 @@ def main():
 
     plt.plot(x, y, label='original', color="blue")
     plt.plot(xx, yy, label='average-60', color="orange")
-    plt.plot(xxx, yyy, label='average-30', color="green")
+    plt.plot(xxx, yyy, label='average-120', color="green")
 
     plt.legend()
-    plt.savefig("./data/set/graph.png")
+    plt.savefig("./data/graph.png")
 
 
 if __name__ == '__main__':

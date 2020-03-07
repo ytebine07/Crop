@@ -11,7 +11,6 @@ class Convolve:
             https://deepage.net/features/numpy-convolve.html
         @return
             移動平均後の整数の座標のlist
-            原理上、元のリストより数が少なくなってしまう分は、最後の座標で保管
         """
         self._average = average
         self._input = input
@@ -19,14 +18,19 @@ class Convolve:
     def calculate(self):
 
         v = np.ones(self._average)/self._average
-        y3 = np.convolve(self._input, v, mode='valid')
+        y3 = np.convolve(self._input, v, mode='same')
 
+        # 最初と最後の計算が上手くできないので、
+        # オリジナルの座標を入れておく
         return_list = []
         frame_count = 0
         for i in self._input:
-            if frame_count >= len(y3):
-                # 足りない分は一番最後の座標を入れておく
-                return_list.append(int(y3[len(y3)-1]))
+            if frame_count <= self._average:
+                # 動画冒頭
+                return_list.append(self._input[frame_count])
+            elif len(self._input) - frame_count <= self._average:
+                # 動画最後
+                return_list.append(self._input[frame_count])
             else:
                 return_list.append(int(y3[frame_count]))
             frame_count += 1

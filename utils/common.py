@@ -11,7 +11,6 @@ class Common:
         y = []
         with open(path) as f:
             for f_line in f:
-                # x.append(int(f_line.split(',')[0])/60)
                 x.append(int(f_line.split(',')[0])/60)
                 y.append(int(f_line.split(',')[1].strip()))
 
