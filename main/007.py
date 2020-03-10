@@ -22,7 +22,7 @@ tf.logging.set_verbosity(tf.logging.ERROR)
 
 # 定義系
 
-AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 30))
+AVERAGE_FRAME = int(os.getenv("AVERAGE_FRAME", 120))
 QUALITY = os.getenv("QUALITY", 'fastest')
 
 model_path = os.getenv(
