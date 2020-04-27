@@ -63,7 +63,7 @@ def main():
 
         # 複数のオブジェクトを検出する可能性があるのでforで回す
         for d in detections[1]:
-            if d["name"] == "person" and d["percentage_probability"] > 80:
+            if d["name"] == "person" and d["percentage_probability"] > 60:
                 is_human = True
                 x1 = d["box_points"][0]
                 x2 = d["box_points"][2]
