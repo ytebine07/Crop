@@ -90,14 +90,14 @@ def main():
     f = open(positions_path, "w")
     f_count = 1
     for line in original_centers:
-        a = "{0},{1}\n".format(f_count, int(line))
-        f.write(a)
+        np_original_centers = "{0},{1}\n".format(f_count, int(line))
+        f.write(np_original_centers)
         f_count += 1
     f.close
 
     # 移動平均の算出
-    a = np.array(original_centers)
-    conv = Convolve(AVERAGE_FRAME, a)
+    np_original_centers = np.array(original_centers)
+    conv = Convolve(AVERAGE_FRAME, np_original_centers)
     y3 = conv.calculate()
 
     fc = 0
