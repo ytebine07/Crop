@@ -90,8 +90,8 @@ def main():
     f = open(positions_path, "w")
     f_count = 1
     for line in original_centers:
-        np_original_centers = "{0},{1}\n".format(f_count, int(line))
-        f.write(np_original_centers)
+        tmp = "{0},{1}\n".format(f_count, int(line))
+        f.write(tmp)
         f_count += 1
     f.close
 
