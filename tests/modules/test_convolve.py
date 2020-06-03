@@ -14,8 +14,8 @@ class TestConvolve(unittest.TestCase):
         self.target = 5 + np.sin(x) + np.random.randn(100) * 0.2
 
     def test_convolve(self):
-        convolve = Convolve(self.average, self.target)
-        c = convolve.calculate()
+        convolve = Convolve(self.average)
+        c = convolve.calculate(self.target)
 
         self.assertEqual(type(np.ndarray(1)), type(c))
 
