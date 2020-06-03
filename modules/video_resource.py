@@ -1,6 +1,7 @@
 import os
 import glob
 import ffmpeg
+from typing import List
 from modules.video import Video
 
 
@@ -11,11 +12,26 @@ class VideoResource:
         self.__stream = ffmpeg.input(video.path)
 
     def create(self):
-        self.__stream = ffmpeg.output(
-            self.__stream, os.path.join(self.__path, "image_%5d.png")
-        )
-        ffmpeg.run(self.__stream)
+        self.__extract_images()
+        self.__extract_sound()
         return self
 
-    def get_video_resources(self) -> list:
+    def get_image_paths(self) -> List[str]:
         return sorted(glob.glob(os.path.join(self.__path, "*png")))
+
+    def get_sound_path(self) -> str:
+        return os.path.join(self.__path, "sound.mp4")
+
+    def __extract_images(self):
+        ffmpeg.output(self.__stream, os.path.join(self.__path, "image_%5d.png")).run()
+
+    def __extract_sound(self):
+        (
+            ffmpeg.input(self.__video.path)
+            .output(
+                acodec="copy",
+                map="0:1",
+                filename=os.path.join(self.__path, "sound.mp4"),
+            )
+            .run(capture_stdout=True)
+        )
