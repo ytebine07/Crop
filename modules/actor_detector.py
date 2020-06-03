@@ -79,6 +79,6 @@ class ActorDetector:
         return actor
 
     def __is_person(self, detection) -> bool:
-        if detection["name"] == "person" and detection["percentage_probability"] > 60:
+        if detection["name"] == "person" and detection["percentage_probability"] > 30:
             return True
         return False
