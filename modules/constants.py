@@ -6,3 +6,6 @@ class Constants:
 
     MODEL_PATH = os.path.join(ROOT_DIR_PATH, "model")
     MODEL_FILE_PATH = os.path.join(MODEL_PATH, "resnet50_coco_best_v2.0.1.h5")
+
+    AVERAGE_FLAMES = 120
+
