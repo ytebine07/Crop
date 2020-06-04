@@ -8,4 +8,3 @@ class Constants:
     MODEL_FILE_PATH = os.path.join(MODEL_PATH, "resnet50_coco_best_v2.0.1.h5")
 
     AVERAGE_FLAMES = 120
-
