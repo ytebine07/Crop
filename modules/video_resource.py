@@ -3,12 +3,15 @@ import glob
 import ffmpeg
 from typing import List
 from modules.video import Video
+from modules.dir import Directory
 
 
 class VideoResource:
-    def __init__(self, video: Video, path: str):
+    def __init__(self, video: Video, baseDir: str):
+        self.workDir = os.path.join(baseDir, "original")
+        Directory.create(self.workDir)
+
         self.__video = video
-        self.__path = path
         self.__stream = ffmpeg.input(video.path)
 
     def create(self):
@@ -17,13 +20,16 @@ class VideoResource:
         return self
 
     def get_image_paths(self) -> List[str]:
-        return sorted(glob.glob(os.path.join(self.__path, "*png")))
+        return sorted(glob.glob(os.path.join(self.workDir, "*png")))
+
+    def get_image_path(self) -> str:
+        return os.path.join(self.workDir, "*png")
 
     def get_sound_path(self) -> str:
-        return os.path.join(self.__path, "sound.mp4")
+        return os.path.join(self.workDir, "sound.mp4")
 
     def __extract_images(self):
-        ffmpeg.output(self.__stream, os.path.join(self.__path, "image_%5d.png")).run()
+        ffmpeg.output(self.__stream, os.path.join(self.workDir, "image_%5d.png")).run()
 
     def __extract_sound(self):
         (
@@ -31,7 +37,7 @@ class VideoResource:
             .output(
                 acodec="copy",
                 map="0:1",
-                filename=os.path.join(self.__path, "sound.mp4"),
+                filename=os.path.join(self.workDir, "sound.mp4"),
             )
             .run(capture_stdout=True)
         )
