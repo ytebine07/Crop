@@ -25,3 +25,6 @@ class Cropper:
         Image.open(image_path).crop((x1, 0, x2, self.__video.height)).save(
             os.path.join(self.workdir, file), quality=100
         )
+
+    def get_images_path(self):
+        return os.path.join(self.workdir, "image_%5d.png")
