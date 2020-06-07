@@ -23,7 +23,7 @@ class VideoResource:
         return sorted(glob.glob(os.path.join(self.workDir, "*png")))
 
     def get_image_path(self) -> str:
-        return os.path.join(self.workDir, "*png")
+        return os.path.join(self.workDir, "image_%5d.png")
 
     def get_sound_path(self) -> str:
         return os.path.join(self.workDir, "sound.mp4")
@@ -39,5 +39,5 @@ class VideoResource:
                 map="0:1",
                 filename=os.path.join(self.workDir, "sound.mp4"),
             )
-            .run(capture_stdout=True)
+            .run(overwrite_output=True)
         )
