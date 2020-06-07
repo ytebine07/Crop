@@ -14,7 +14,8 @@ from modules.encoder import Encoder
 
 def main():
     parser = argparse.ArgumentParser(
-        description="[Crop] Crop out a landscape video and make it a virtical video."
+        description="[Crop] Crop out a landscape video and make it a virtical video.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
         "-f", "-file", type=argparse.FileType("r"), help="[required]input target video file.", required=True
@@ -30,8 +31,8 @@ def main():
         "-a",
         "-average",
         type=int,
-        help="The number of frames to be averaged over in order to make the video smooth.",
-        default=Const.AVERAGE_FLAMES
+        default=Const.AVERAGE_FLAMES,
+        help="The number of frames to be averaged over in order to make the video smooth."
     )
     args = parser.parse_args()
 
