@@ -28,13 +28,18 @@ class ActorDetector:
         self.__detector.setModelPath(const.MODEL_FILE_PATH)
         self.__detector.loadModel(detection_speed="fastest")
 
+        self.__custum_objects = self.__detector.CustomObjects(person=True)
+
         self.__screen_x: int = screen.width // 2
         self.__screen_y: int = screen.height // 2
         self.__screen_median: np.array = np.array([self.__screen_x, self.__screen_y])
 
     def get_actor(self, imagePath: str) -> Optional[Person]:
-        detections = self.__detector.detectObjectsFromImage(
-            input_image=imagePath, output_type="array"
+        detections = self.__detector.detectCustomObjectsFromImage(
+            self.__custum_objects,
+            input_image=imagePath,
+            output_type="array",
+            minimum_percentage_probability=30,
         )
 
         persons = self.__extract_persons(detections)
@@ -46,8 +51,7 @@ class ActorDetector:
     def __extract_persons(self, detections) -> List[Person]:
         persons_list = []
         for d in detections[1]:
-            if self.__is_person(d):
-                persons_list.append(Person(d))
+            persons_list.append(Person(d))
         return persons_list
 
     def __extract_actor(self, persons: List[Person]) -> Optional[Person]:
@@ -59,8 +63,3 @@ class ActorDetector:
             if (actor is None) or (actor.distance > person.distance):
                 actor = person
         return actor
-
-    def __is_person(self, detection) -> bool:
-        if detection["name"] == "person" and detection["percentage_probability"] > 30:
-            return True
-        return False
