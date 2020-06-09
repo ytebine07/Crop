@@ -7,3 +7,5 @@ model/*h5
 # dirs
 __pycache__
 data/
+
+.vscode
