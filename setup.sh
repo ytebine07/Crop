@@ -14,4 +14,4 @@ else
     echo "  - Already Exists. Skip Download."
 fi
 
-docker-compose up --build
+docker-compose up --build -d
