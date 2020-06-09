@@ -51,6 +51,20 @@ optional arguments:
                     the video smooth. (default: 120)
 ```
 
+## For Develop
+When developing with `Visual Studio Code` + `Remote Containers`
+
+1. Open command pallet
+2. Chose `Remote-containers: Open Folder in Cotainer...`, start building the environment.
+
+### tips
+When you start `crop.py`, `-w` directory should be outside git.  
+e.g. `/tmp/workdir`  
+
+Because it`s slower inside the git.
+
+
+
 ## Built With
 * [ImageAI](https://github.com/OlafenwaMoses/ImageAI) - Image Recognition
 * [FFmpeg](https://www.ffmpeg.org/) - Create Video

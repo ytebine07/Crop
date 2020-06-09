@@ -5,3 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    tty: True
+    volumes:
+      - .:/workspaces/crop
