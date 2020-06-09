@@ -32,15 +32,6 @@ class ActorDetector:
         self.__screen_y: int = screen.height // 2
         self.__screen_median: np.array = np.array([self.__screen_x, self.__screen_y])
 
-    # def detect(self, imagePath: str):
-    #     detections = self.__detector.detectObjectsFromImage(
-    #         input_image=imagePath, output_image_path="/tmp/detect", output_type="array"
-    #     )
-
-    #     self.position = self.__get_actor_position(detections)
-
-    #     return self
-
     def get_actor(self, imagePath: str) -> Optional[Person]:
         detections = self.__detector.detectObjectsFromImage(
             input_image=imagePath, output_type="array"
@@ -51,15 +42,6 @@ class ActorDetector:
             return None
 
         return self.__extract_actor(persons)
-
-    # def __get_actor_position(self, detections) -> int:
-
-    #     persons = self.__extract_persons(detections)
-    #     if 0 == len(persons):
-    #         return -1
-
-    #     actor = self.__extract_actor(persons)
-    #     return actor.center_x
 
     def __extract_persons(self, detections) -> List[Person]:
         persons_list = []
