@@ -5,7 +5,6 @@ autopep8==1.5
 certifi==2019.11.28
 chardet==3.0.4
 cycler==0.10.0
-ffmpeg==1.4
 gast==0.2.2
 google-pasta==0.1.8
 grpcio==1.26.0
@@ -43,5 +42,4 @@ typed-ast==1.4.1
 urllib3==1.25.8
 Werkzeug==0.16.0
 wrapt==1.11.2
-ffmpeg==1.4
 ffmpeg-python==0.2.0
