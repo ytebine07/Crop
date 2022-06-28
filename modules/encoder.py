@@ -30,6 +30,7 @@ class Encoder:
                 vcodec="libx264",
                 pix_fmt="yuv420p",
                 filename=self.__no_sound_filepath,
+                vf="scale=720:1280", #shortsで60p出すための設定
             )
             .run(overwrite_output=True)
         )
