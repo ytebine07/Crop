@@ -33,7 +33,7 @@ PyYAML==5.3
 requests==2.22.0
 scipy==1.4.1
 tensorboard==2.4
-tensorflow==2.4.0
+tensorflow-gpu==2.4.0
 tensorflow-estimator==2.4.0rc0
 termcolor==1.1.0
 tqdm==4.42.0

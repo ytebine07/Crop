@@ -36,7 +36,7 @@ class ActorDetector:
 
     def get_actor(self, imagePath: str) -> Optional[Person]:
         detections = self.__detector.detectCustomObjectsFromImage(
-            self.__custum_objects,
+            custom_objects=self.__custum_objects,
             input_image=imagePath,
             output_type="array",
             minimum_percentage_probability=30,
