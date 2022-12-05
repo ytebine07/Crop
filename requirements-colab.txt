@@ -21,7 +21,7 @@ Markdown==3.1.1
 matplotlib==3.3.2
 mccabe==0.6.1
 numpy==1.19.3
-opencv-python==4.1.2.30
+opencv-python==4.2.0.32
 opt-einsum==3.3.0
 Pillow==7.0.0
 protobuf==3.11.2
