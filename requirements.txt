@@ -24,7 +24,7 @@ numpy==1.19.3
 opencv-python==4.1.2.30
 opt-einsum==3.3.0
 Pillow==7.0.0
-protobuf==3.11.2
+protobuf==3.18.3
 pycodestyle==2.5.0
 pylint==2.4.4
 pyparsing==2.4.6
