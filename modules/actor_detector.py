@@ -24,7 +24,7 @@ class Person:
 class ActorDetector:
     def __init__(self, screen: Video):
         self.__detector = ObjectDetection()
-        self.__detector.setModelTypeAsRetinaNet()
+        self.__detector.setModelTypeAsTinyYOLOv3()
         self.__detector.setModelPath(const.MODEL_FILE_PATH)
         self.__detector.loadModel(detection_speed="fastest")
 
