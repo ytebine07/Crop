@@ -9,8 +9,8 @@ Easy to watch on smartphone.
 - [Croped]   https://youtu.be/BEyEPU3hN6s
 
 ## Requirements
-* Python 3.6.10
-* TensorFlow 1.15.0
+* Python 3.7.6
+* TensorFlow 2.4.0
 * Large Storage
   * Use about 23GB space per 3min freestyle.
 
