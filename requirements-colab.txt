@@ -38,5 +38,5 @@ tensorflow-estimator==2.4.0rc0
 termcolor==1.1.0
 tqdm==4.42.0
 urllib3==1.25.8
-Werkzeug==0.16.0
+Werkzeug==2.2.3
 ffmpeg-python==0.2.0
