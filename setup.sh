@@ -1,7 +1,7 @@
 #/bin/bash
 MODEL_DIR='./model'
-MODEL_FILE='yolo-tiny.h5'
-DOWNLOAD_URL='https://github.com/OlafenwaMoses/ImageAI/releases/download/1.0/yolo-tiny.h5'
+MODEL_FILE='tiny-yolov3.pt'
+DOWNLOAD_URL='https://github.com/OlafenwaMoses/ImageAI/releases/download/3.0.0-pretrained/tiny-yolov3.pt'
 MODEL_FILE_PATH=$MODEL_DIR/$MODEL_FILE
 
 echo "[Crop]Setup Script."

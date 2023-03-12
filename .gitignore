@@ -1,5 +1,6 @@
 # files
 model/*h5
+model/*pt
 *mp4
 *png
 

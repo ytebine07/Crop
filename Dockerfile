@@ -1,4 +1,4 @@
-FROM python:3.6
+FROM python:3.7
 
 WORKDIR /workspaces/
 RUN apt-get update -y

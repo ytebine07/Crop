@@ -26,21 +26,24 @@ class ActorDetector:
         self.__detector = ObjectDetection()
         self.__detector.setModelTypeAsTinyYOLOv3()
         self.__detector.setModelPath(const.MODEL_FILE_PATH)
-        self.__detector.loadModel(detection_speed="fastest")
-
-        self.__custum_objects = self.__detector.CustomObjects(person=True)
+        self.__detector.loadModel()
 
         self.__screen_x: int = screen.width // 2
         self.__screen_y: int = screen.height // 2
         self.__screen_median: np.array = np.array([self.__screen_x, self.__screen_y])
 
     def get_actor(self, imagePath: str) -> Optional[Person]:
-        detections = self.__detector.detectCustomObjectsFromImage(
-            custom_objects=self.__custum_objects,
+        detections = self.__detector.detectObjectsFromImage(
             input_image=imagePath,
             output_type="array",
             minimum_percentage_probability=30,
         )
+        #detections = self.__detector.detectCustomObjectsFromImage(
+        #    custom_objects=self.__custum_objects,
+        #    input_image=imagePath,
+        #    output_type="array",
+        #    minimum_percentage_probability=30,
+        #)
 
         persons = self.__extract_persons(detections)
         if 0 == len(persons):
