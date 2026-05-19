@@ -37,7 +37,16 @@ def main():
         default=Const.AVERAGE_FLAMES,
         help="The number of frames to be averaged over in order to make the video smooth."
     )
+    parser.add_argument(
+        "-i",
+        "-interval",
+        type=int,
+        default=Const.DETECT_INTERVAL_FRAMES,
+        help="The frame interval for actor detection. Intermediate frames are interpolated."
+    )
     args = parser.parse_args()
+    if args.i < 1:
+        raise Exception("detect interval must be greater than or equal to 1.")
 
     video: Video = Video(args.f)
     detector: ActorDetector = ActorDetector(video)
@@ -52,6 +61,9 @@ def main():
 
     print("[Step. 2/4] Detect Actor.")
     with performance_logger.step("Step. 2/4 Detect Actor"):
+        detected_frame_indexes = []
+        detected_centers = []
+        frame_index = 0
         capture = cv2.VideoCapture(video.path)
         try:
             if not capture.isOpened():
@@ -65,19 +77,30 @@ def main():
                     if not ret:
                         break
 
-                    actor: Person = detector.get_actor_from_frame(frame)
-                    if actor is not None:
-                        original_centers.append(actor.center_x)
-                        center_x = actor.center_x
-                    else:
-                        original_centers.append(center_x)
+                    if frame_index % args.i == 0:
+                        actor: Person = detector.get_actor_from_frame(frame)
+                        if actor is not None:
+                            center_x = actor.center_x
+                        detected_frame_indexes.append(frame_index)
+                        detected_centers.append(center_x)
+
+                    frame_index += 1
                     progress.update(1)
         finally:
             capture.release()
 
-        if len(original_centers) == 0:
+        if frame_index == 0:
             raise Exception("video frame could not be read.")
 
+        if len(detected_centers) == 0:
+            detected_frame_indexes.append(0)
+            detected_centers.append(center_x)
+
+        original_centers = np.interp(
+            np.arange(frame_index),
+            np.array(detected_frame_indexes),
+            np.array(detected_centers),
+        )
         convolved_centers: list = convolve.calculate(np.array(original_centers))
     # TODO : 座標のファイル書き出し
 
