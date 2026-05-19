@@ -19,6 +19,10 @@ class VideoResource:
         self.__extract_sound()
         return self
 
+    def create_sound_only(self):
+        self.__extract_sound()
+        return self
+
     def get_image_paths(self) -> List[str]:
         return sorted(glob.glob(os.path.join(self.workDir, "*png")))
 

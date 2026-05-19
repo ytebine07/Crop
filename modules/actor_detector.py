@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 from typing import List, Optional
 from imageai.Detection import ObjectDetection
 
@@ -38,13 +39,19 @@ class ActorDetector:
             output_type="array",
             minimum_percentage_probability=30,
         )
-        #detections = self.__detector.detectCustomObjectsFromImage(
-        #    custom_objects=self.__custum_objects,
-        #    input_image=imagePath,
-        #    output_type="array",
-        #    minimum_percentage_probability=30,
-        #)
+        return self.__get_actor_from_detections(detections)
 
+    def get_actor_from_frame(self, frame: np.ndarray) -> Optional[Person]:
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        detections = self.__detector.detectObjectsFromImage(
+            input_image=rgb_frame,
+            input_type="array",
+            output_type="array",
+            minimum_percentage_probability=30,
+        )
+        return self.__get_actor_from_detections(detections)
+
+    def __get_actor_from_detections(self, detections) -> Optional[Person]:
         persons = self.__extract_persons(detections)
         if 0 == len(persons):
             return None
