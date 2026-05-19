@@ -43,12 +43,21 @@ class ActorDetector:
 
     def get_actor_from_frame(self, frame: np.ndarray) -> Optional[Person]:
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        detections = self.__detector.detectObjectsFromImage(
-            input_image=rgb_frame,
-            input_type="array",
-            output_type="array",
-            minimum_percentage_probability=30,
-        )
+        try:
+            detections = self.__detector.detectObjectsFromImage(
+                input_image=rgb_frame,
+                input_type="array",
+                output_type="array",
+                minimum_percentage_probability=30,
+            )
+        except TypeError as e:
+            if "input_type" not in str(e):
+                raise
+            detections = self.__detector.detectObjectsFromImage(
+                input_image=rgb_frame,
+                output_type="array",
+                minimum_percentage_probability=30,
+            )
         return self.__get_actor_from_detections(detections)
 
     def __get_actor_from_detections(self, detections) -> Optional[Person]:

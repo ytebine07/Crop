@@ -21,7 +21,7 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        "-f", "-file", type=argparse.FileType("r"), help="[required]input target video file.", required=True
+        "-f", "-file", type=str, help="[required]input target video file.", required=True
     )
     parser.add_argument(
         "-w",
@@ -39,7 +39,7 @@ def main():
     )
     args = parser.parse_args()
 
-    video: Video = Video(args.f.name)
+    video: Video = Video(args.f)
     detector: ActorDetector = ActorDetector(video)
     convolve: Convolve = Convolve(args.a)
     performance_logger = PerformanceLogger(args.w)
