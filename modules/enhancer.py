@@ -1,7 +1,40 @@
 import os
+import importlib
+import sys
 
 from modules.constants import Constants as Const
 from modules.dir import Directory
+
+
+def install_torchvision_functional_tensor_compatibility():
+    module_name = "torchvision.transforms.functional_tensor"
+    if module_name in sys.modules:
+        return False
+
+    try:
+        importlib.import_module(module_name)
+        return False
+    except ModuleNotFoundError:
+        pass
+
+    for replacement_name in (
+        "torchvision.transforms._functional_tensor",
+        "torchvision.transforms.functional",
+    ):
+        try:
+            replacement = importlib.import_module(replacement_name)
+            sys.modules[module_name] = replacement
+            print(
+                "[Enhancer] Installed torchvision compatibility shim: {0} -> {1}".format(
+                    module_name,
+                    replacement_name,
+                )
+            )
+            return True
+        except ModuleNotFoundError:
+            continue
+
+    raise ModuleNotFoundError("No module named '{0}'".format(module_name))
 
 
 class NoOpEnhancer:
@@ -20,6 +53,9 @@ class RealESRGANEnhancer:
     @classmethod
     def create(cls):
         import torch
+
+        install_torchvision_functional_tensor_compatibility()
+
         from basicsr.archs.rrdbnet_arch import RRDBNet
         from basicsr.utils.download_util import load_file_from_url
         from realesrgan import RealESRGANer
