@@ -8,3 +8,4 @@ class Constants:
     MODEL_FILE_PATH = os.path.join(MODEL_PATH, "tiny-yolov3.pt")
 
     AVERAGE_FLAMES = 120
+    DETECT_INTERVAL_FRAMES = 10

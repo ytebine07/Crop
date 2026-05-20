@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 from typing import List, Optional
 from imageai.Detection import ObjectDetection
 
@@ -27,24 +28,67 @@ class ActorDetector:
         self.__detector.setModelTypeAsTinyYOLOv3()
         self.__detector.setModelPath(const.MODEL_FILE_PATH)
         self.__detector.loadModel()
+        self.__person_objects = self.__create_person_objects()
 
         self.__screen_x: int = screen.width // 2
         self.__screen_y: int = screen.height // 2
         self.__screen_median: np.array = np.array([self.__screen_x, self.__screen_y])
 
     def get_actor(self, imagePath: str) -> Optional[Person]:
-        detections = self.__detector.detectObjectsFromImage(
-            input_image=imagePath,
-            output_type="array",
-            minimum_percentage_probability=30,
-        )
-        #detections = self.__detector.detectCustomObjectsFromImage(
-        #    custom_objects=self.__custum_objects,
-        #    input_image=imagePath,
-        #    output_type="array",
-        #    minimum_percentage_probability=30,
-        #)
+        detections = self.__detect_persons(input_image=imagePath)
+        return self.__get_actor_from_detections(detections)
 
+    def get_actor_from_frame(self, frame: np.ndarray) -> Optional[Person]:
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        detections = self.__detect_persons(input_image=rgb_frame, input_type="array")
+        return self.__get_actor_from_detections(detections)
+
+    def __create_person_objects(self):
+        if not hasattr(self.__detector, "CustomObjects"):
+            return None
+        return self.__detector.CustomObjects(person=True)
+
+    def __detect_persons(self, input_image, input_type=None):
+        if self.__person_objects is not None and hasattr(
+            self.__detector, "detectCustomObjectsFromImage"
+        ):
+            try:
+                return self.__detect_custom_persons(input_image, input_type)
+            except TypeError as e:
+                if input_type is None or "input_type" not in str(e):
+                    raise
+                return self.__detect_custom_persons(input_image)
+
+        return self.__detect_objects(input_image, input_type)
+
+    def __detect_custom_persons(self, input_image, input_type=None):
+        params = {
+            "custom_objects": self.__person_objects,
+            "input_image": input_image,
+            "output_type": "array",
+            "minimum_percentage_probability": 30,
+        }
+        if input_type is not None:
+            params["input_type"] = input_type
+        return self.__detector.detectCustomObjectsFromImage(**params)
+
+    def __detect_objects(self, input_image, input_type=None):
+        params = {
+            "input_image": input_image,
+            "output_type": "array",
+            "minimum_percentage_probability": 30,
+        }
+        if input_type is not None:
+            params["input_type"] = input_type
+        try:
+            return self.__detector.detectObjectsFromImage(**params)
+        except TypeError as e:
+            if input_type is None or "input_type" not in str(e):
+                raise
+            params.pop("input_type")
+            return self.__detector.detectObjectsFromImage(**params)
+
+    def __get_actor_from_detections(self, detections) -> Optional[Person]:
         persons = self.__extract_persons(detections)
         if 0 == len(persons):
             return None
@@ -54,8 +98,12 @@ class ActorDetector:
     def __extract_persons(self, detections) -> List[Person]:
         persons_list = []
         for d in detections[1]:
-            persons_list.append(Person(d))
+            if self.__is_person_detection(d):
+                persons_list.append(Person(d))
         return persons_list
+
+    def __is_person_detection(self, detection) -> bool:
+        return detection.get("name") in (None, "person")
 
     def __extract_actor(self, persons: List[Person]) -> Optional[Person]:
         actor = None
