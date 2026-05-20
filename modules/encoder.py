@@ -2,6 +2,8 @@ import ffmpeg
 import os
 from typing import Optional
 
+from modules.constants import Constants as Const
+
 
 class Encoder:
 
@@ -35,7 +37,10 @@ class Encoder:
                 vcodec="libx264",
                 pix_fmt="yuv420p",
                 filename=self.__no_sound_filepath,
-                vf="scale=720:1280", #shortsで60p出すための設定
+                vf="scale={0}:{1}".format(Const.OUTPUT_WIDTH, Const.OUTPUT_HEIGHT),
+                preset=Const.VIDEO_PRESET,
+                crf=Const.VIDEO_CRF,
+                **{"profile:v": Const.VIDEO_PROFILE, "movflags": "+faststart"}
             )
             .run(overwrite_output=True)
         )

@@ -35,6 +35,24 @@ cd Crop
  -w /local/work
 ```
 
+### High quality mode on Google Colab
+
+The command line interface is unchanged. When CUDA and Real-ESRGAN dependencies
+are available, Crop automatically enhances cropped frames with GPU super
+resolution before encoding `final.mp4`.
+
+To install the Colab dependencies:
+
+```
+pip install -r requirements-colab.txt
+```
+
+To disable GPU enhancement and use standard high-quality resizing:
+
+```
+CROP_ENHANCER=off python crop.py -f input.mp4 -w /content/work
+```
+
 ## Usage
 
 ```
