@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 MODEL_DIR='./model'
 MODEL_FILE='tiny-yolov3.pt'
 DOWNLOAD_URL='https://github.com/OlafenwaMoses/ImageAI/releases/download/3.0.0-pretrained/tiny-yolov3.pt'
@@ -14,4 +14,8 @@ else
     echo "  - Already Exists. Skip Download."
 fi
 
-docker-compose up --build -d
+if command -v docker-compose >/dev/null 2>&1; then
+    docker-compose up --build -d
+else
+    echo "- docker-compose is unavailable. Skip container startup."
+fi

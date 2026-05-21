@@ -70,15 +70,10 @@ To use the video super-resolution path with RealBasicVSR, prepare the official
 RealBasicVSR repository in Colab and run Crop with `CROP_ENHANCER=realbasicvsr`:
 
 ```
-git clone https://github.com/ckkelvinchan/RealBasicVSR.git /content/RealBasicVSR
-cd /content/RealBasicVSR
-pip install openmim
-mim install mmcv-full
-pip install mmedit
-mkdir -p checkpoints
-# Download RealBasicVSR_x4.pth into /content/RealBasicVSR/checkpoints/
-
 cd /content/Crop
+chmod 755 ./setup_colab_realbasicvsr.sh
+./setup_colab_realbasicvsr.sh
+
 CROP_ENHANCER=realbasicvsr python crop.py -f input.mp4 -w /content/work
 ```
 
