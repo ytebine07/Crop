@@ -64,16 +64,23 @@ class TestVideoEnhancer(unittest.TestCase):
                 with mock.patch("modules.video_enhancer.subprocess.run") as run_mock:
                     enhancer.enhance("cropped_raw.mp4", "nosound.mp4")
 
-        commands = [call.args[0] for call in run_mock.call_args_list]
-        self.assertEqual(commands[0][0:4], ["ffmpeg", "-y", "-i", "cropped_raw.mp4"])
-        self.assertEqual(commands[1][0:4], ["python", script_path, config_path, checkpoint_path])
-        self.assertIn("--max_seq_len=12", commands[1])
-        self.assertIn("--is_save_as_png=True", commands[1])
-        self.assertIn("--fps=29.97", commands[1])
-        self.assertEqual(commands[2][0:4], ["ffmpeg", "-y", "-framerate", "29.97"])
-        self.assertIn("-crf", commands[2])
-        self.assertIn(str(Const.VIDEO_CRF), commands[2])
-        self.assertEqual(commands[2][-1], "nosound.mp4")
+            commands = [call.args[0] for call in run_mock.call_args_list]
+            self.assertEqual(commands[0][0:4], ["ffmpeg", "-y", "-i", "cropped_raw.mp4"])
+            self.assertEqual(commands[1][0:4], ["python", script_path, config_path, checkpoint_path])
+            self.assertIn("--max_seq_len=12", commands[1])
+            self.assertIn("--is_save_as_png=True", commands[1])
+            self.assertIn("--fps=29.97", commands[1])
+            inference_env = run_mock.call_args_list[1].kwargs["env"]
+            compat_path = os.path.join(tempdir, "realbasicvsr_py_compat")
+            self.assertTrue(inference_env["PYTHONPATH"].startswith(compat_path))
+            with open(os.path.join(compat_path, "sitecustomize.py")) as sitecustomize:
+                sitecustomize_content = sitecustomize.read()
+            self.assertIn("ImpImporter", sitecustomize_content)
+            self.assertIn("'bool': bool", sitecustomize_content)
+            self.assertEqual(commands[2][0:4], ["ffmpeg", "-y", "-framerate", "29.97"])
+            self.assertIn("-crf", commands[2])
+            self.assertIn(str(Const.VIDEO_CRF), commands[2])
+            self.assertEqual(commands[2][-1], "nosound.mp4")
 
     def test_realbasicvsr_fails_when_repo_is_missing(self):
         with tempfile.TemporaryDirectory() as tempdir:

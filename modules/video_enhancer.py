@@ -105,6 +105,7 @@ class RealBasicVSREnhancer:
         )
 
     def __run_inference(self):
+        env = self.__subprocess_env()
         subprocess.run(
             [
                 "python",
@@ -119,7 +120,48 @@ class RealBasicVSREnhancer:
             ],
             check=True,
             cwd=self.__repo_dir,
+            env=env,
         )
+
+    def __subprocess_env(self):
+        env = os.environ.copy()
+        compat_dir = os.path.join(self.__workdir, "realbasicvsr_py_compat")
+        Directory.create(compat_dir)
+        sitecustomize_path = os.path.join(compat_dir, "sitecustomize.py")
+        with open(sitecustomize_path, "w") as sitecustomize:
+            sitecustomize.write(
+                "\n".join(
+                    [
+                        "import pkgutil, zipimport",
+                        "if not hasattr(pkgutil, 'ImpImporter'):",
+                        "    pkgutil.ImpImporter = zipimport.zipimporter",
+                        "if not hasattr(pkgutil, 'ImpLoader'):",
+                        "    pkgutil.ImpLoader = zipimport.zipimporter",
+                        "try:",
+                        "    import numpy as _np",
+                        "    for _name, _value in {",
+                        "        'bool': bool,",
+                        "        'int': int,",
+                        "        'float': float,",
+                        "        'complex': complex,",
+                        "        'object': object,",
+                        "    }.items():",
+                        "        if not hasattr(_np, _name):",
+                        "            setattr(_np, _name, _value)",
+                        "except Exception:",
+                        "    pass",
+                        "",
+                    ]
+                )
+            )
+        env["PYTHONPATH"] = self.__prepend_path(compat_dir, env.get("PYTHONPATH", ""))
+        return env
+
+    @staticmethod
+    def __prepend_path(path, current):
+        if current:
+            return path + os.pathsep + current
+        return path
 
     def __encode_video(self, output_video_path: str):
         if len(glob.glob(os.path.join(self.__output_frames_dir, "*.png"))) == 0:
