@@ -1,4 +1,5 @@
 import unittest
+import sys
 from types import SimpleNamespace
 from unittest import mock
 
@@ -9,10 +10,14 @@ from modules.stream_cropper import StreamCropper
 class FakeFrame:
     def __init__(self):
         self.slices = []
+        self.shape = (1080, 1920, 3)
 
     def __getitem__(self, key):
         self.slices.append(key)
         return self
+
+    def tobytes(self):
+        return b"frame"
 
 
 class FakeImage:
@@ -30,6 +35,51 @@ class FakeCv2:
     def resize(self, frame, size, interpolation):
         self.resize_calls.append((frame, size, interpolation))
         return frame
+
+
+class FakeCapture:
+    def __init__(self, frames):
+        self.frames = list(frames)
+        self.released = False
+
+    def isOpened(self):
+        return True
+
+    def get(self, _):
+        return len(self.frames)
+
+    def read(self):
+        if len(self.frames) == 0:
+            return False, None
+        return True, self.frames.pop(0)
+
+    def release(self):
+        self.released = True
+
+
+class FakeProcess:
+    def __init__(self):
+        self.stdin = mock.Mock()
+
+    def wait(self):
+        return 0
+
+
+class FakeProgress:
+    def __init__(self, total=None, desc=None, unit=None):
+        self.total = total
+        self.desc = desc
+        self.unit = unit
+        self.updates = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def update(self, amount):
+        self.updates.append(amount)
 
 
 class TestStreamCropper(unittest.TestCase):
@@ -74,3 +124,34 @@ class TestStreamCropper(unittest.TestCase):
         self.assertIn("-preset", command)
         self.assertIn(Const.VIDEO_PRESET, command)
         self.assertIn("{0}x{1}".format(Const.OUTPUT_WIDTH, Const.OUTPUT_HEIGHT), command)
+
+    def test_crop_reports_frame_progress(self):
+        video = SimpleNamespace(width=1920, height=1080, fps=30, path="input.mp4")
+        enhancer = SimpleNamespace(enhance=lambda frame: frame)
+        cropper = StreamCropper(video, "output.mp4", enhancer=enhancer)
+        capture = FakeCapture([FakeFrame(), FakeFrame()])
+        process = FakeProcess()
+        progress_instances = []
+
+        def create_progress(*args, **kwargs):
+            progress = FakeProgress(*args, **kwargs)
+            progress_instances.append(progress)
+            return progress
+
+        fake_cv2 = SimpleNamespace(
+            VideoCapture=mock.Mock(return_value=capture),
+            CAP_PROP_FRAME_COUNT=7,
+            INTER_AREA=FakeCv2.INTER_AREA,
+            INTER_LANCZOS4=FakeCv2.INTER_LANCZOS4,
+            resize=FakeCv2().resize,
+        )
+        fake_tqdm = SimpleNamespace(tqdm=create_progress)
+
+        with mock.patch.dict(sys.modules, {"cv2": fake_cv2, "tqdm": fake_tqdm}):
+            with mock.patch.object(cropper, "_StreamCropper__create_ffmpeg_process", return_value=process):
+                cropper.crop([100, 120], total_frames=2)
+
+        self.assertEqual(progress_instances[0].total, 2)
+        self.assertEqual(progress_instances[0].desc, "Crop/Enhance frames")
+        self.assertEqual(progress_instances[0].unit, "frame")
+        self.assertEqual(progress_instances[0].updates, [1, 1])

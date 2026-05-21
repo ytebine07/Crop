@@ -107,7 +107,10 @@ def main():
     print("[Step. 3/4] Crop Actor.")
     with performance_logger.step("Step. 3/4 Crop Actor"):
         no_sound_path = os.path.join(args.w, Encoder.NO_SOUND_FILENAME)
-        StreamCropper(video, no_sound_path).crop(tqdm(convolved_centers))
+        StreamCropper(video, no_sound_path).crop(
+            convolved_centers,
+            total_frames=len(convolved_centers),
+        )
 
     print("[Step. 4/4] Create Croped Video.")
     with performance_logger.step("Step. 4/4 Create Croped Video"):

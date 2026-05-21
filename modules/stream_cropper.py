@@ -17,24 +17,36 @@ class StreamCropper:
         self.__output_height = Const.OUTPUT_HEIGHT
         self.__enhancer = enhancer if enhancer is not None else FrameEnhancer.create_default()
 
-    def crop(self, centers: Iterable[float]):
+    def crop(self, centers: Iterable[float], total_frames=None):
         import cv2
+        from tqdm import tqdm
 
         capture = cv2.VideoCapture(self.__video.path)
         if not capture.isOpened():
             raise Exception("video file could not be opened.")
 
+        progress_total = total_frames
+        if progress_total is None:
+            frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+            progress_total = frame_count if frame_count > 0 else None
+
         process = self.__create_ffmpeg_process()
         try:
-            for center_position in centers:
-                ret, frame = capture.read()
-                if not ret:
-                    break
+            with tqdm(
+                total=progress_total,
+                desc="Crop/Enhance frames",
+                unit="frame",
+            ) as progress:
+                for center_position in centers:
+                    ret, frame = capture.read()
+                    if not ret:
+                        break
 
-                cropped_frame = self.__crop_frame(frame, center_position)
-                enhanced_frame = self.__enhancer.enhance(cropped_frame)
-                resized_frame = self.__resize_frame(enhanced_frame, cv2)
-                process.stdin.write(resized_frame.tobytes())
+                    cropped_frame = self.__crop_frame(frame, center_position)
+                    enhanced_frame = self.__enhancer.enhance(cropped_frame)
+                    resized_frame = self.__resize_frame(enhanced_frame, cv2)
+                    process.stdin.write(resized_frame.tobytes())
+                    progress.update(1)
         finally:
             capture.release()
             if process.stdin:
