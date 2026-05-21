@@ -110,6 +110,8 @@ def main():
     with performance_logger.step("Step. 3/4 Crop Actor"):
         no_sound_path = os.path.join(args.w, Encoder.NO_SOUND_FILENAME)
         if VideoEnhancer.is_requested():
+            video_enhancer = VideoEnhancer.create_default(args.w, video.fps)
+            video_enhancer.validate()
             cropped_raw_path = os.path.join(args.w, Const.CROPPED_RAW_FILENAME)
             raw_crop_width = int(video.height * 9 / 16)
             if raw_crop_width % 2 != 0:
@@ -125,7 +127,7 @@ def main():
                 convolved_centers,
                 total_frames=len(convolved_centers),
             )
-            VideoEnhancer.create_default(args.w, video.fps).enhance(
+            video_enhancer.enhance(
                 cropped_raw_path,
                 no_sound_path,
             )

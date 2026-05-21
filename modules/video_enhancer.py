@@ -9,6 +9,9 @@ from modules.dir import Directory
 class NoOpVideoEnhancer:
     name = "none"
 
+    def validate(self):
+        return self
+
     def enhance(self, input_video_path: str, output_video_path: str):
         if input_video_path != output_video_path:
             self.__copy_video(input_video_path, output_video_path)
@@ -58,17 +61,7 @@ class RealBasicVSREnhancer:
         self.__input_frames_dir = os.path.join(workdir, "realbasicvsr_input")
         self.__output_frames_dir = os.path.join(workdir, "realbasicvsr_output")
 
-    def enhance(self, input_video_path: str, output_video_path: str):
-        self.__validate()
-        Directory.create(self.__input_frames_dir)
-        Directory.create(self.__output_frames_dir)
-
-        self.__extract_frames(input_video_path)
-        self.__run_inference()
-        self.__encode_video(output_video_path)
-        return output_video_path
-
-    def __validate(self):
+    def validate(self):
         script_path = self.__script_path()
         config_path = self.__resolve_repo_path(self.__config_path)
         missing_paths = []
@@ -78,10 +71,26 @@ class RealBasicVSREnhancer:
 
         if len(missing_paths) > 0:
             raise RuntimeError(
-                "RealBasicVSR is not ready. Missing: {0}".format(
-                    ", ".join(missing_paths)
+                "RealBasicVSR is not ready. Missing: {0}. "
+                "Prepare the official RealBasicVSR repo and checkpoint, or set "
+                "{1}, {2}, and {3}.".format(
+                    ", ".join(missing_paths),
+                    Const.REAL_BASIC_VSR_REPO_ENV,
+                    Const.REAL_BASIC_VSR_CONFIG_ENV,
+                    Const.REAL_BASIC_VSR_CHECKPOINT_ENV,
                 )
             )
+        return self
+
+    def enhance(self, input_video_path: str, output_video_path: str):
+        self.validate()
+        Directory.create(self.__input_frames_dir)
+        Directory.create(self.__output_frames_dir)
+
+        self.__extract_frames(input_video_path)
+        self.__run_inference()
+        self.__encode_video(output_video_path)
+        return output_video_path
 
     def __extract_frames(self, input_video_path: str):
         subprocess.run(

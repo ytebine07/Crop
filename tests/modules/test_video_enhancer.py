@@ -35,6 +35,9 @@ class TestVideoEnhancer(unittest.TestCase):
             ["ffmpeg", "-y", "-i", "input.mp4", "-c", "copy", "output.mp4"],
         )
 
+    def test_noop_validate_succeeds(self):
+        self.assertIsInstance(NoOpVideoEnhancer().validate(), NoOpVideoEnhancer)
+
     def test_realbasicvsr_runs_extract_inference_and_encode(self):
         with tempfile.TemporaryDirectory() as tempdir:
             repo_dir = os.path.join(tempdir, "RealBasicVSR")
@@ -84,3 +87,19 @@ class TestVideoEnhancer(unittest.TestCase):
 
             with self.assertRaisesRegex(RuntimeError, "RealBasicVSR is not ready"):
                 enhancer.enhance("cropped_raw.mp4", "nosound.mp4")
+
+    def test_realbasicvsr_validate_fails_before_subprocess(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            enhancer = RealBasicVSREnhancer(
+                workdir=tempdir,
+                fps=30,
+                repo_dir=os.path.join(tempdir, "missing"),
+                config_path="config.py",
+                checkpoint_path=os.path.join(tempdir, "missing.pth"),
+            )
+
+            with mock.patch("modules.video_enhancer.subprocess.run") as run_mock:
+                with self.assertRaisesRegex(RuntimeError, Const.REAL_BASIC_VSR_REPO_ENV):
+                    enhancer.validate()
+
+        run_mock.assert_not_called()
