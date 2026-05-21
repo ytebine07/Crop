@@ -32,9 +32,21 @@ class FakeCv2:
 
     def __init__(self):
         self.resize_calls = []
+        self.gaussian_blur_calls = []
+        self.add_weighted_calls = []
 
     def resize(self, frame, size, interpolation):
         self.resize_calls.append((frame, size, interpolation))
+        return frame
+
+    def GaussianBlur(self, frame, kernel_size, sigma):
+        self.gaussian_blur_calls.append((frame, kernel_size, sigma))
+        return FakeImage(frame.shape[1], frame.shape[0])
+
+    def addWeighted(self, frame, frame_weight, blurred_frame, blur_weight, gamma):
+        self.add_weighted_calls.append(
+            (frame, frame_weight, blurred_frame, blur_weight, gamma)
+        )
         return frame
 
 
@@ -113,6 +125,33 @@ class TestStreamCropper(unittest.TestCase):
 
         self.assertEqual(cv2.resize_calls[0][2], FakeCv2.INTER_AREA)
 
+    def test_sharpen_frame_applies_unsharp_mask(self):
+        video = SimpleNamespace(width=1920, height=1080, fps=30, path="input.mp4")
+        cropper = StreamCropper(video, "output.mp4", enhancer=SimpleNamespace())
+        cv2 = FakeCv2()
+        frame = FakeImage(1080, 1920)
+
+        result = cropper._StreamCropper__sharpen_frame(frame, cv2)
+
+        self.assertIs(result, frame)
+        self.assertEqual(cv2.gaussian_blur_calls[0], (frame, (0, 0), Const.UNSHARP_MASK_SIGMA))
+        self.assertEqual(cv2.add_weighted_calls[0][0], frame)
+        self.assertEqual(cv2.add_weighted_calls[0][1], 1 + Const.UNSHARP_MASK_AMOUNT)
+        self.assertEqual(cv2.add_weighted_calls[0][3], -Const.UNSHARP_MASK_AMOUNT)
+
+    def test_sharpen_frame_can_be_disabled(self):
+        video = SimpleNamespace(width=1920, height=1080, fps=30, path="input.mp4")
+        cropper = StreamCropper(video, "output.mp4", enhancer=SimpleNamespace())
+        cv2 = FakeCv2()
+        frame = FakeImage(1080, 1920)
+
+        with mock.patch.object(Const, "UNSHARP_MASK_ENABLED", False):
+            result = cropper._StreamCropper__sharpen_frame(frame, cv2)
+
+        self.assertIs(result, frame)
+        self.assertEqual(cv2.gaussian_blur_calls, [])
+        self.assertEqual(cv2.add_weighted_calls, [])
+
     def test_ffmpeg_command_uses_high_quality_settings(self):
         video = SimpleNamespace(width=1920, height=1080, fps=30, path="input.mp4")
         cropper = StreamCropper(video, "output.mp4", enhancer=SimpleNamespace())
@@ -146,6 +185,8 @@ class TestStreamCropper(unittest.TestCase):
             INTER_AREA=FakeCv2.INTER_AREA,
             INTER_LANCZOS4=FakeCv2.INTER_LANCZOS4,
             resize=FakeCv2().resize,
+            GaussianBlur=FakeCv2().GaussianBlur,
+            addWeighted=FakeCv2().addWeighted,
         )
         fake_tqdm = SimpleNamespace(tqdm=create_progress)
 
@@ -178,6 +219,8 @@ class TestStreamCropper(unittest.TestCase):
             INTER_AREA=FakeCv2.INTER_AREA,
             INTER_LANCZOS4=FakeCv2.INTER_LANCZOS4,
             resize=FakeCv2().resize,
+            GaussianBlur=FakeCv2().GaussianBlur,
+            addWeighted=FakeCv2().addWeighted,
         )
         fake_tqdm = SimpleNamespace(tqdm=create_progress)
 

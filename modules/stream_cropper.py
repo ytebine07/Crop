@@ -52,6 +52,7 @@ class StreamCropper:
                     cropped_frame = self.__crop_frame(frame, center_position)
                     enhanced_frame = self.__enhancer.enhance(cropped_frame)
                     resized_frame = self.__resize_frame(enhanced_frame, cv2)
+                    resized_frame = self.__sharpen_frame(resized_frame, cv2)
                     process.stdin.write(resized_frame.tobytes())
                     processed_frames += 1
                     progress.update(1)
@@ -147,6 +148,23 @@ class StreamCropper:
             frame,
             (self.__output_width, self.__output_height),
             interpolation=interpolation,
+        )
+
+    def __sharpen_frame(self, frame, cv2):
+        if not Const.UNSHARP_MASK_ENABLED or Const.UNSHARP_MASK_AMOUNT <= 0:
+            return frame
+
+        blurred_frame = cv2.GaussianBlur(
+            frame,
+            (0, 0),
+            Const.UNSHARP_MASK_SIGMA,
+        )
+        return cv2.addWeighted(
+            frame,
+            1 + Const.UNSHARP_MASK_AMOUNT,
+            blurred_frame,
+            -Const.UNSHARP_MASK_AMOUNT,
+            0,
         )
 
     def __create_ffmpeg_process(self):
