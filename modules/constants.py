@@ -27,7 +27,7 @@ class Constants:
     OUTPUT_WIDTH = 1080
     OUTPUT_HEIGHT = 1920
 
-    VIDEO_CRF = 18
+    VIDEO_CRF = 16
     VIDEO_PRESET = "slow"
     VIDEO_PROFILE = "high"
 
