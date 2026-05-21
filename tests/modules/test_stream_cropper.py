@@ -66,7 +66,7 @@ class FakeProcess:
 
 
 class FakeProgress:
-    def __init__(self, total=None, desc=None, unit=None):
+    def __init__(self, total=None, desc=None, unit=None, **_):
         self.total = total
         self.desc = desc
         self.unit = unit
@@ -155,3 +155,28 @@ class TestStreamCropper(unittest.TestCase):
         self.assertEqual(progress_instances[0].desc, "Crop/Enhance frames")
         self.assertEqual(progress_instances[0].unit, "frame")
         self.assertEqual(progress_instances[0].updates, [1, 1])
+
+    def test_print_frame_progress_logs_first_interval_and_last_frame(self):
+        video = SimpleNamespace(width=1920, height=1080, fps=30, path="input.mp4")
+        cropper = StreamCropper(video, "output.mp4", enhancer=SimpleNamespace())
+
+        with mock.patch("modules.stream_cropper.time.perf_counter", return_value=20):
+            with mock.patch("builtins.print") as print_mock:
+                cropper._StreamCropper__print_frame_progress(1, 25, 0)
+                cropper._StreamCropper__print_frame_progress(2, 25, 0)
+                cropper._StreamCropper__print_frame_progress(10, 25, 0)
+                cropper._StreamCropper__print_frame_progress(25, 25, 0)
+
+        logs = [call.args[0] for call in print_mock.call_args_list]
+        self.assertEqual(len(logs), 3)
+        self.assertIn("1/25", logs[0])
+        self.assertIn("10/25", logs[1])
+        self.assertIn("25/25", logs[2])
+
+    def test_format_seconds(self):
+        video = SimpleNamespace(width=1920, height=1080, fps=30, path="input.mp4")
+        cropper = StreamCropper(video, "output.mp4", enhancer=SimpleNamespace())
+
+        self.assertEqual(cropper._StreamCropper__format_seconds(8), "8s")
+        self.assertEqual(cropper._StreamCropper__format_seconds(68), "1m08s")
+        self.assertEqual(cropper._StreamCropper__format_seconds(3668), "1h01m08s")

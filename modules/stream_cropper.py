@@ -1,4 +1,5 @@
 import subprocess
+import time
 from typing import Iterable, TYPE_CHECKING
 
 from modules.constants import Constants as Const
@@ -31,11 +32,15 @@ class StreamCropper:
             progress_total = frame_count if frame_count > 0 else None
 
         process = self.__create_ffmpeg_process()
+        processed_frames = 0
+        started_at = time.perf_counter()
         try:
             with tqdm(
                 total=progress_total,
                 desc="Crop/Enhance frames",
                 unit="frame",
+                mininterval=1,
+                leave=True,
             ) as progress:
                 for center_position in centers:
                     ret, frame = capture.read()
@@ -46,7 +51,13 @@ class StreamCropper:
                     enhanced_frame = self.__enhancer.enhance(cropped_frame)
                     resized_frame = self.__resize_frame(enhanced_frame, cv2)
                     process.stdin.write(resized_frame.tobytes())
+                    processed_frames += 1
                     progress.update(1)
+                    self.__print_frame_progress(
+                        processed_frames,
+                        progress_total,
+                        started_at,
+                    )
         finally:
             capture.release()
             if process.stdin:
@@ -56,6 +67,59 @@ class StreamCropper:
                 raise Exception("ffmpeg failed to encode cropped video.")
 
         return self
+
+    def __print_frame_progress(self, processed_frames, total_frames, started_at):
+        should_print = processed_frames == 1
+        should_print = should_print or (
+            processed_frames % Const.CROP_PROGRESS_LOG_INTERVAL_FRAMES == 0
+        )
+        should_print = should_print or (
+            total_frames is not None and processed_frames >= total_frames
+        )
+        if not should_print:
+            return
+
+        elapsed = time.perf_counter() - started_at
+        seconds_per_frame = elapsed / processed_frames
+        if total_frames is None:
+            print(
+                "[Progress] Crop/Enhance frames: {0} done, {1:.2f}s/frame".format(
+                    processed_frames,
+                    seconds_per_frame,
+                ),
+                flush=True,
+            )
+            return
+
+        percent = processed_frames / total_frames * 100
+        remaining_frames = max(total_frames - processed_frames, 0)
+        eta_seconds = remaining_frames * seconds_per_frame
+        print(
+            "[Progress] Crop/Enhance frames: {0}/{1} ({2:.1f}%), {3:.2f}s/frame, eta={4}".format(
+                processed_frames,
+                total_frames,
+                percent,
+                seconds_per_frame,
+                self.__format_seconds(eta_seconds),
+            ),
+            flush=True,
+        )
+
+    @staticmethod
+    def __format_seconds(seconds):
+        seconds = int(round(seconds))
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        remaining_seconds = seconds % 60
+        if hours > 0:
+            return "{0:d}h{1:02d}m{2:02d}s".format(
+                hours,
+                minutes,
+                remaining_seconds,
+            )
+        if minutes > 0:
+            return "{0:d}m{1:02d}s".format(minutes, remaining_seconds)
+        return "{0:d}s".format(remaining_seconds)
 
     def __crop_frame(self, frame, center_position):
         half_width = self.__crop_width // 2
