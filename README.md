@@ -47,6 +47,19 @@ To install the Colab dependencies:
 pip install -r requirements-colab.txt
 ```
 
+Colab must use a GPU runtime. Verify PyTorch can see CUDA before running Crop:
+
+```
+!nvidia-smi
+import torch
+print(torch.__version__)
+print(torch.version.cuda)
+print(torch.cuda.is_available())
+```
+
+If `torch.cuda.is_available()` prints `False`, switch Colab to a GPU runtime
+and restart the runtime before installing dependencies again.
+
 To disable GPU enhancement and use standard high-quality resizing:
 
 ```

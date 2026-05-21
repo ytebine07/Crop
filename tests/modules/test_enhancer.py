@@ -9,6 +9,8 @@ from modules.constants import Constants as Const
 from modules.enhancer import (
     FrameEnhancer,
     NoOpEnhancer,
+    ensure_cuda_available,
+    get_cuda_diagnostics,
     install_torchvision_functional_tensor_compatibility,
 )
 
@@ -109,3 +111,52 @@ class TestFrameEnhancer(unittest.TestCase):
 
         self.assertTrue(installed)
         self.assertIs(sys.modules["torchvision.transforms.functional_tensor"], replacement)
+
+    def test_cuda_diagnostics_include_torch_and_nvidia_smi(self):
+        torch = mock.Mock()
+        torch.__version__ = "2.5.0+cpu"
+        torch.version.cuda = None
+        torch.cuda.device_count.return_value = 0
+        result = mock.Mock()
+        result.returncode = 1
+        result.stdout = ""
+        result.stderr = "NVIDIA-SMI has failed"
+
+        with mock.patch("modules.enhancer.subprocess.run", return_value=result):
+            diagnostics = get_cuda_diagnostics(torch)
+
+        self.assertIn("torch.__version__=2.5.0+cpu", diagnostics)
+        self.assertIn("torch.version.cuda=None", diagnostics)
+        self.assertIn("torch.cuda.device_count()=0", diagnostics)
+        self.assertIn("nvidia-smi failed: NVIDIA-SMI has failed", diagnostics)
+
+    def test_ensure_cuda_available_logs_diagnostics_before_failure(self):
+        torch = mock.Mock()
+        torch.__version__ = "2.5.0+cpu"
+        torch.version.cuda = None
+        torch.cuda.is_available.return_value = False
+        torch.cuda.device_count.return_value = 0
+        result = mock.Mock()
+        result.returncode = 0
+        result.stdout = "Tesla T4\n"
+        result.stderr = ""
+
+        with mock.patch("modules.enhancer.subprocess.run", return_value=result):
+            with mock.patch("builtins.print") as print_mock:
+                with self.assertRaisesRegex(RuntimeError, "CUDA is not available"):
+                    ensure_cuda_available(torch)
+
+        log = "\n".join(call.args[0] for call in print_mock.call_args_list)
+        self.assertIn("torch.__version__=2.5.0+cpu", log)
+        self.assertIn("nvidia-smi detected GPU(s): Tesla T4", log)
+
+    def test_ensure_cuda_available_logs_gpu_name(self):
+        torch = mock.Mock()
+        torch.cuda.is_available.return_value = True
+        torch.cuda.get_device_name.return_value = "Tesla T4"
+
+        with mock.patch("builtins.print") as print_mock:
+            ensure_cuda_available(torch)
+
+        log = "\n".join(call.args[0] for call in print_mock.call_args_list)
+        self.assertIn("CUDA available: Tesla T4", log)

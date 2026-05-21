@@ -1,5 +1,6 @@
 import os
 import importlib
+import subprocess
 import sys
 
 from modules.constants import Constants as Const
@@ -37,6 +38,56 @@ def install_torchvision_functional_tensor_compatibility():
     raise ModuleNotFoundError("No module named '{0}'".format(module_name))
 
 
+def get_cuda_diagnostics(torch):
+    diagnostics = [
+        "torch.__version__={0}".format(getattr(torch, "__version__", "unknown")),
+        "torch.version.cuda={0}".format(getattr(torch.version, "cuda", None)),
+    ]
+    try:
+        diagnostics.append("torch.cuda.device_count()={0}".format(torch.cuda.device_count()))
+    except Exception as error:
+        diagnostics.append("torch.cuda.device_count() failed: {0}".format(error))
+
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            gpu_names = ", ".join(
+                line.strip() for line in result.stdout.splitlines() if line.strip()
+            )
+            diagnostics.append("nvidia-smi detected GPU(s): {0}".format(gpu_names))
+        else:
+            message = result.stderr.strip() or result.stdout.strip()
+            diagnostics.append("nvidia-smi failed: {0}".format(message))
+    except Exception as error:
+        diagnostics.append("nvidia-smi unavailable: {0}".format(error))
+
+    return diagnostics
+
+
+def ensure_cuda_available(torch):
+    if torch.cuda.is_available():
+        try:
+            print("[Enhancer] CUDA available: {0}".format(torch.cuda.get_device_name(0)))
+        except Exception:
+            print("[Enhancer] CUDA available.")
+        return
+
+    for diagnostic in get_cuda_diagnostics(torch):
+        print("[Enhancer] CUDA diagnostic: {0}".format(diagnostic))
+
+    raise RuntimeError(
+        "CUDA is not available. In Google Colab, select a GPU runtime and make sure "
+        "the installed PyTorch build includes CUDA support."
+    )
+
+
 class NoOpEnhancer:
     name = "standard-resize"
 
@@ -54,14 +105,12 @@ class RealESRGANEnhancer:
     def create(cls):
         import torch
 
+        ensure_cuda_available(torch)
         install_torchvision_functional_tensor_compatibility()
 
         from basicsr.archs.rrdbnet_arch import RRDBNet
         from basicsr.utils.download_util import load_file_from_url
         from realesrgan import RealESRGANer
-
-        if not torch.cuda.is_available():
-            raise RuntimeError("CUDA is not available.")
 
         Directory.create(Const.REAL_ESRGAN_MODEL_DIR)
         model_path = os.path.join(
