@@ -11,12 +11,21 @@ if TYPE_CHECKING:
 
 
 class StreamCropper:
-    def __init__(self, video: "Video", output_path: str, enhancer=None):
+    def __init__(
+        self,
+        video: "Video",
+        output_path: str,
+        enhancer=None,
+        output_width=None,
+        output_height=None,
+        sharpen=True,
+    ):
         self.__video = video
         self.__output_path = output_path
         self.__crop_width = int(video.height * 9 / 16)
-        self.__output_width = Const.OUTPUT_WIDTH
-        self.__output_height = Const.OUTPUT_HEIGHT
+        self.__output_width = output_width or Const.OUTPUT_WIDTH
+        self.__output_height = output_height or Const.OUTPUT_HEIGHT
+        self.__sharpen = sharpen
         self.__enhancer = enhancer if enhancer is not None else FrameEnhancer.create_default()
 
     def crop(self, centers: Iterable[float], total_frames=None):
@@ -151,7 +160,11 @@ class StreamCropper:
         )
 
     def __sharpen_frame(self, frame, cv2):
-        if not Const.UNSHARP_MASK_ENABLED or Const.UNSHARP_MASK_AMOUNT <= 0:
+        if (
+            not self.__sharpen
+            or not Const.UNSHARP_MASK_ENABLED
+            or Const.UNSHARP_MASK_AMOUNT <= 0
+        ):
             return frame
 
         blurred_frame = cv2.GaussianBlur(

@@ -11,8 +11,10 @@ from modules.video_resource import VideoResource
 from modules.actor_detector import ActorDetector, Person
 from modules.convolve import Convolve
 from modules.encoder import Encoder
+from modules.enhancer import NoOpEnhancer
 from modules.performance_logger import PerformanceLogger
 from modules.stream_cropper import StreamCropper
+from modules.video_enhancer import VideoEnhancer
 
 
 def main():
@@ -107,10 +109,31 @@ def main():
     print("[Step. 3/4] Crop Actor.")
     with performance_logger.step("Step. 3/4 Crop Actor"):
         no_sound_path = os.path.join(args.w, Encoder.NO_SOUND_FILENAME)
-        StreamCropper(video, no_sound_path).crop(
-            convolved_centers,
-            total_frames=len(convolved_centers),
-        )
+        if VideoEnhancer.is_requested():
+            cropped_raw_path = os.path.join(args.w, Const.CROPPED_RAW_FILENAME)
+            raw_crop_width = int(video.height * 9 / 16)
+            if raw_crop_width % 2 != 0:
+                raw_crop_width += 1
+            StreamCropper(
+                video,
+                cropped_raw_path,
+                enhancer=NoOpEnhancer(),
+                output_width=raw_crop_width,
+                output_height=video.height,
+                sharpen=False,
+            ).crop(
+                convolved_centers,
+                total_frames=len(convolved_centers),
+            )
+            VideoEnhancer.create_default(args.w, video.fps).enhance(
+                cropped_raw_path,
+                no_sound_path,
+            )
+        else:
+            StreamCropper(video, no_sound_path).crop(
+                convolved_centers,
+                total_frames=len(convolved_centers),
+            )
 
     print("[Step. 4/4] Create Croped Video.")
     with performance_logger.step("Step. 4/4 Create Croped Video"):

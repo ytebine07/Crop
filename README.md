@@ -66,6 +66,31 @@ To disable GPU enhancement and use standard high-quality resizing:
 CROP_ENHANCER=off python crop.py -f input.mp4 -w /content/work
 ```
 
+To use the video super-resolution path with RealBasicVSR, prepare the official
+RealBasicVSR repository in Colab and run Crop with `CROP_ENHANCER=realbasicvsr`:
+
+```
+git clone https://github.com/ckkelvinchan/RealBasicVSR.git /content/RealBasicVSR
+cd /content/RealBasicVSR
+pip install openmim
+mim install mmcv-full
+pip install mmedit
+mkdir -p checkpoints
+# Download RealBasicVSR_x4.pth into /content/RealBasicVSR/checkpoints/
+
+cd /content/Crop
+CROP_ENHANCER=realbasicvsr python crop.py -f input.mp4 -w /content/work
+```
+
+If your RealBasicVSR checkout or checkpoint is in a different location, set:
+
+```
+REAL_BASIC_VSR_REPO=/content/RealBasicVSR
+REAL_BASIC_VSR_CONFIG=configs/realbasicvsr_x4.py
+REAL_BASIC_VSR_CHECKPOINT=/content/RealBasicVSR/checkpoints/RealBasicVSR_x4.pth
+REAL_BASIC_VSR_MAX_SEQ_LEN=30
+```
+
 ## Usage
 
 ```
