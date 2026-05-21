@@ -202,8 +202,23 @@ class TestStreamCropper(unittest.TestCase):
         logs = [call.args[0] for call in print_mock.call_args_list]
         self.assertEqual(len(logs), 3)
         self.assertIn("1/25", logs[0])
+        self.assertIn("0.05fps", logs[0])
         self.assertIn("10/25", logs[1])
+        self.assertIn("0.50fps", logs[1])
         self.assertIn("25/25", logs[2])
+        self.assertIn("1.25fps", logs[2])
+
+    def test_print_frame_progress_without_total_logs_fps(self):
+        video = SimpleNamespace(width=1920, height=1080, fps=30, path="input.mp4")
+        cropper = StreamCropper(video, "output.mp4", enhancer=SimpleNamespace())
+
+        with mock.patch("modules.stream_cropper.time.perf_counter", return_value=5):
+            with mock.patch("builtins.print") as print_mock:
+                cropper._StreamCropper__print_frame_progress(10, None, 0)
+
+        log = print_mock.call_args_list[0].args[0]
+        self.assertIn("10 done", log)
+        self.assertIn("2.00fps", log)
 
     def test_format_seconds(self):
         video = SimpleNamespace(width=1920, height=1080, fps=30, path="input.mp4")

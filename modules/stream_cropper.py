@@ -91,11 +91,12 @@ class StreamCropper:
 
         elapsed = time.perf_counter() - started_at
         seconds_per_frame = elapsed / processed_frames
+        frames_per_second = processed_frames / elapsed if elapsed > 0 else 0
         if total_frames is None:
             print(
-                "[Progress] Crop/Enhance frames: {0} done, {1:.2f}s/frame".format(
+                "[Progress] Crop/Enhance frames: {0} done, {1:.2f}fps".format(
                     processed_frames,
-                    seconds_per_frame,
+                    frames_per_second,
                 ),
                 flush=True,
             )
@@ -105,11 +106,11 @@ class StreamCropper:
         remaining_frames = max(total_frames - processed_frames, 0)
         eta_seconds = remaining_frames * seconds_per_frame
         print(
-            "[Progress] Crop/Enhance frames: {0}/{1} ({2:.1f}%), {3:.2f}s/frame, eta={4}".format(
+            "[Progress] Crop/Enhance frames: {0}/{1} ({2:.1f}%), {3:.2f}fps, eta={4}".format(
                 processed_frames,
                 total_frames,
                 percent,
-                seconds_per_frame,
+                frames_per_second,
                 self.__format_seconds(eta_seconds),
             ),
             flush=True,
