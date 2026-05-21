@@ -67,8 +67,8 @@ class TestVideoEnhancer(unittest.TestCase):
         commands = [call.args[0] for call in run_mock.call_args_list]
         self.assertEqual(commands[0][0:4], ["ffmpeg", "-y", "-i", "cropped_raw.mp4"])
         self.assertEqual(commands[1][0:4], ["python", script_path, config_path, checkpoint_path])
-        self.assertIn("--max-seq-len=12", commands[1])
-        self.assertIn("--is_save_as_png", commands[1])
+        self.assertIn("--max_seq_len=12", commands[1])
+        self.assertIn("--is_save_as_png=True", commands[1])
         self.assertIn("--fps=29.97", commands[1])
         self.assertEqual(commands[2][0:4], ["ffmpeg", "-y", "-framerate", "29.97"])
         self.assertIn("-crf", commands[2])
