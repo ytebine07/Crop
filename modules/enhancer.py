@@ -108,33 +108,18 @@ class RealESRGANEnhancer:
         ensure_cuda_available(torch)
         install_torchvision_functional_tensor_compatibility()
 
-        from basicsr.archs.rrdbnet_arch import RRDBNet
         from basicsr.utils.download_util import load_file_from_url
         from realesrgan import RealESRGANer
 
         Directory.create(Const.REAL_ESRGAN_MODEL_DIR)
-        model_path = os.path.join(
-            Const.REAL_ESRGAN_MODEL_DIR, Const.REAL_ESRGAN_MODEL_NAME + ".pth"
+        model, netscale, model_path, dni_weight = cls.__create_model(
+            load_file_from_url
         )
-        if not os.path.exists(model_path):
-            model_path = load_file_from_url(
-                url=Const.REAL_ESRGAN_MODEL_URL,
-                model_dir=Const.REAL_ESRGAN_MODEL_DIR,
-                progress=True,
-                file_name=Const.REAL_ESRGAN_MODEL_NAME + ".pth",
-            )
 
-        model = RRDBNet(
-            num_in_ch=3,
-            num_out_ch=3,
-            num_feat=64,
-            num_block=23,
-            num_grow_ch=32,
-            scale=4,
-        )
         upsampler = RealESRGANer(
-            scale=4,
+            scale=netscale,
             model_path=model_path,
+            dni_weight=dni_weight,
             model=model,
             tile=Const.REAL_ESRGAN_TILE,
             tile_pad=Const.REAL_ESRGAN_TILE_PAD,
@@ -146,6 +131,60 @@ class RealESRGANEnhancer:
             Const.REAL_ESRGAN_TILE,
         ))
         return cls(upsampler)
+
+    @staticmethod
+    def __download_model_files(load_file_from_url, model_name):
+        urls = Const.REAL_ESRGAN_MODEL_URLS[model_name]
+        model_paths = []
+        for url in urls:
+            filename = os.path.basename(url)
+            model_path = os.path.join(Const.REAL_ESRGAN_MODEL_DIR, filename)
+            if not os.path.exists(model_path):
+                model_path = load_file_from_url(
+                    url=url,
+                    model_dir=Const.REAL_ESRGAN_MODEL_DIR,
+                    progress=True,
+                    file_name=filename,
+                )
+            model_paths.append(model_path)
+        return model_paths
+
+    @classmethod
+    def __create_model(cls, load_file_from_url):
+        model_name = Const.REAL_ESRGAN_MODEL_NAME
+        if model_name == "RealESRGAN_x4plus":
+            from basicsr.archs.rrdbnet_arch import RRDBNet
+
+            model = RRDBNet(
+                num_in_ch=3,
+                num_out_ch=3,
+                num_feat=64,
+                num_block=23,
+                num_grow_ch=32,
+                scale=4,
+            )
+            model_path = cls.__download_model_files(load_file_from_url, model_name)[0]
+            return model, 4, model_path, None
+
+        if model_name == "realesr-general-x4v3":
+            from realesrgan.archs.srvgg_arch import SRVGGNetCompact
+
+            model = SRVGGNetCompact(
+                num_in_ch=3,
+                num_out_ch=3,
+                num_feat=64,
+                num_conv=32,
+                upscale=4,
+                act_type="prelu",
+            )
+            model_paths = cls.__download_model_files(load_file_from_url, model_name)
+            dni_weight = [
+                Const.REAL_ESRGAN_DENOISE_STRENGTH,
+                1 - Const.REAL_ESRGAN_DENOISE_STRENGTH,
+            ]
+            return model, 4, [model_paths[1], model_paths[0]], dni_weight
+
+        raise RuntimeError("Unsupported Real-ESRGAN model: {0}".format(model_name))
 
     def enhance(self, frame):
         enhanced_frame, _ = self.__upsampler.enhance(

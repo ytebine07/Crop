@@ -9,6 +9,7 @@ from modules.constants import Constants as Const
 from modules.enhancer import (
     FrameEnhancer,
     NoOpEnhancer,
+    RealESRGANEnhancer,
     ensure_cuda_available,
     get_cuda_diagnostics,
     install_torchvision_functional_tensor_compatibility,
@@ -23,6 +24,16 @@ TORCHVISION_MODULES = (
     "torchvision.transforms.functional",
 )
 ORIGINAL_IMPORT_MODULE = importlib.import_module
+
+
+class FakeSRVGGNetCompact:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+
+class FakeRRDBNet:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
 
 
 class TestFrameEnhancer(unittest.TestCase):
@@ -160,3 +171,54 @@ class TestFrameEnhancer(unittest.TestCase):
 
         log = "\n".join(call.args[0] for call in print_mock.call_args_list)
         self.assertIn("CUDA available: Tesla T4", log)
+
+    def test_create_model_uses_lightweight_general_model(self):
+        srvgg_module = types.ModuleType("realesrgan.archs.srvgg_arch")
+        srvgg_module.SRVGGNetCompact = FakeSRVGGNetCompact
+        expected_paths = [
+            os.path.join(Const.REAL_ESRGAN_MODEL_DIR, "realesr-general-wdn-x4v3.pth"),
+            os.path.join(Const.REAL_ESRGAN_MODEL_DIR, "realesr-general-x4v3.pth"),
+        ]
+
+        with mock.patch.dict(sys.modules, {"realesrgan.archs.srvgg_arch": srvgg_module}):
+            with mock.patch(
+                "modules.enhancer.RealESRGANEnhancer._RealESRGANEnhancer__download_model_files",
+                return_value=expected_paths,
+            ) as download_mock:
+                model, scale, model_path, dni_weight = (
+                    RealESRGANEnhancer._RealESRGANEnhancer__create_model(mock.Mock())
+                )
+
+        self.assertIsInstance(model, FakeSRVGGNetCompact)
+        self.assertEqual(model.kwargs["num_conv"], 32)
+        self.assertEqual(scale, 4)
+        self.assertEqual(model_path, [expected_paths[1], expected_paths[0]])
+        self.assertEqual(
+            dni_weight,
+            [
+                Const.REAL_ESRGAN_DENOISE_STRENGTH,
+                1 - Const.REAL_ESRGAN_DENOISE_STRENGTH,
+            ],
+        )
+        download_mock.assert_called_once()
+
+    def test_create_model_can_still_use_x4plus_model(self):
+        rrdb_module = types.ModuleType("basicsr.archs.rrdbnet_arch")
+        rrdb_module.RRDBNet = FakeRRDBNet
+        expected_path = os.path.join(Const.REAL_ESRGAN_MODEL_DIR, "RealESRGAN_x4plus.pth")
+
+        with mock.patch.object(Const, "REAL_ESRGAN_MODEL_NAME", "RealESRGAN_x4plus"):
+            with mock.patch.dict(sys.modules, {"basicsr.archs.rrdbnet_arch": rrdb_module}):
+                with mock.patch(
+                    "modules.enhancer.RealESRGANEnhancer._RealESRGANEnhancer__download_model_files",
+                    return_value=[expected_path],
+                ):
+                    model, scale, model_path, dni_weight = (
+                        RealESRGANEnhancer._RealESRGANEnhancer__create_model(mock.Mock())
+                    )
+
+        self.assertIsInstance(model, FakeRRDBNet)
+        self.assertEqual(model.kwargs["num_block"], 23)
+        self.assertEqual(scale, 4)
+        self.assertEqual(model_path, expected_path)
+        self.assertIsNone(dni_weight)
