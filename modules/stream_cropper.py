@@ -1,3 +1,4 @@
+import os
 import subprocess
 import time
 from typing import Iterable, TYPE_CHECKING
@@ -41,6 +42,7 @@ class StreamCropper:
                 unit="frame",
                 mininterval=1,
                 leave=True,
+                disable=self.__is_colab_runtime(),
             ) as progress:
                 for center_position in centers:
                     ret, frame = capture.read()
@@ -67,6 +69,14 @@ class StreamCropper:
                 raise Exception("ffmpeg failed to encode cropped video.")
 
         return self
+
+    @staticmethod
+    def __is_colab_runtime():
+        return (
+            "COLAB_RELEASE_TAG" in os.environ
+            or "COLAB_GPU" in os.environ
+            or "COLAB_BACKEND_VERSION" in os.environ
+        )
 
     def __print_frame_progress(self, processed_frames, total_frames, started_at):
         should_print = processed_frames == 1

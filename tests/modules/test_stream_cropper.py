@@ -1,4 +1,5 @@
 import unittest
+import os
 import sys
 from types import SimpleNamespace
 from unittest import mock
@@ -66,10 +67,11 @@ class FakeProcess:
 
 
 class FakeProgress:
-    def __init__(self, total=None, desc=None, unit=None, **_):
+    def __init__(self, total=None, desc=None, unit=None, disable=False, **_):
         self.total = total
         self.desc = desc
         self.unit = unit
+        self.disable = disable
         self.updates = []
 
     def __enter__(self):
@@ -154,7 +156,37 @@ class TestStreamCropper(unittest.TestCase):
         self.assertEqual(progress_instances[0].total, 2)
         self.assertEqual(progress_instances[0].desc, "Crop/Enhance frames")
         self.assertEqual(progress_instances[0].unit, "frame")
+        self.assertFalse(progress_instances[0].disable)
         self.assertEqual(progress_instances[0].updates, [1, 1])
+
+    def test_crop_disables_tqdm_in_colab(self):
+        video = SimpleNamespace(width=1920, height=1080, fps=30, path="input.mp4")
+        enhancer = SimpleNamespace(enhance=lambda frame: frame)
+        cropper = StreamCropper(video, "output.mp4", enhancer=enhancer)
+        capture = FakeCapture([FakeFrame()])
+        process = FakeProcess()
+        progress_instances = []
+
+        def create_progress(*args, **kwargs):
+            progress = FakeProgress(*args, **kwargs)
+            progress_instances.append(progress)
+            return progress
+
+        fake_cv2 = SimpleNamespace(
+            VideoCapture=mock.Mock(return_value=capture),
+            CAP_PROP_FRAME_COUNT=7,
+            INTER_AREA=FakeCv2.INTER_AREA,
+            INTER_LANCZOS4=FakeCv2.INTER_LANCZOS4,
+            resize=FakeCv2().resize,
+        )
+        fake_tqdm = SimpleNamespace(tqdm=create_progress)
+
+        with mock.patch.dict(sys.modules, {"cv2": fake_cv2, "tqdm": fake_tqdm}):
+            with mock.patch.dict(os.environ, {"COLAB_RELEASE_TAG": "test"}):
+                with mock.patch.object(cropper, "_StreamCropper__create_ffmpeg_process", return_value=process):
+                    cropper.crop([100], total_frames=1)
+
+        self.assertTrue(progress_instances[0].disable)
 
     def test_print_frame_progress_logs_first_interval_and_last_frame(self):
         video = SimpleNamespace(width=1920, height=1080, fps=30, path="input.mp4")
