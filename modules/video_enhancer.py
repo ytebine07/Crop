@@ -1,5 +1,6 @@
 import glob
 import os
+import shutil
 import subprocess
 import time
 
@@ -53,12 +54,15 @@ class RealBasicVSREnhancer:
             Const.REAL_BASIC_VSR_CHECKPOINT_ENV,
             Const.REAL_BASIC_VSR_CHECKPOINT,
         )
-        self.__max_seq_len = int(
-            max_seq_len
-            or os.environ.get(
-                Const.REAL_BASIC_VSR_MAX_SEQ_LEN_ENV,
-                Const.REAL_BASIC_VSR_MAX_SEQ_LEN,
-            )
+        self.__max_seq_len = max(
+            1,
+            int(
+                max_seq_len
+                or os.environ.get(
+                    Const.REAL_BASIC_VSR_MAX_SEQ_LEN_ENV,
+                    Const.REAL_BASIC_VSR_MAX_SEQ_LEN,
+                )
+            ),
         )
         self.__progress_interval_seconds = float(
             progress_interval_seconds
@@ -67,6 +71,7 @@ class RealBasicVSREnhancer:
         )
         self.__input_frames_dir = os.path.join(workdir, "realbasicvsr_input")
         self.__output_frames_dir = os.path.join(workdir, "realbasicvsr_output")
+        self.__chunks_dir = os.path.join(workdir, "realbasicvsr_chunks")
 
     def validate(self):
         script_path = self.__script_path()
@@ -91,8 +96,9 @@ class RealBasicVSREnhancer:
 
     def enhance(self, input_video_path: str, output_video_path: str):
         self.validate()
-        Directory.create(self.__input_frames_dir)
-        Directory.create(self.__output_frames_dir)
+        self.__reset_dir(self.__input_frames_dir)
+        self.__reset_dir(self.__output_frames_dir)
+        self.__reset_dir(self.__chunks_dir)
 
         print("[Progress] RealBasicVSR: start video enhancement.", flush=True)
         self.__extract_frames(input_video_path)
@@ -100,6 +106,12 @@ class RealBasicVSREnhancer:
         self.__encode_video(output_video_path)
         print("[Progress] RealBasicVSR: finished video enhancement.", flush=True)
         return output_video_path
+
+    @staticmethod
+    def __reset_dir(directory):
+        if os.path.exists(directory):
+            shutil.rmtree(directory)
+        Directory.create(directory)
 
     def __extract_frames(self, input_video_path: str):
         print("[Progress] RealBasicVSR extract frames: start.", flush=True)
@@ -122,18 +134,8 @@ class RealBasicVSREnhancer:
 
     def __run_inference(self):
         env = self.__subprocess_env()
-        command = [
-            "python",
-            self.__script_path(),
-            self.__inference_config_path(),
-            self.__checkpoint_path,
-            self.__input_frames_dir,
-            self.__output_frames_dir,
-            "--max_seq_len={0}".format(self.__max_seq_len),
-            "--is_save_as_png=True",
-            "--fps={0}".format(self.__fps),
-        ]
-        total_frames = self.__count_pngs(self.__input_frames_dir)
+        input_frame_paths = self.__input_frame_paths()
+        total_frames = len(input_frame_paths)
         print(
             "[Progress] RealBasicVSR inference: start. total_frames={0}, max_seq_len={1}".format(
                 total_frames,
@@ -141,12 +143,36 @@ class RealBasicVSREnhancer:
             ),
             flush=True,
         )
+        started_at = time.monotonic()
+
+        for chunk_index, chunk_frame_paths in enumerate(
+            self.__chunks(input_frame_paths, self.__max_seq_len),
+            start=1,
+        ):
+            chunk_dir = self.__prepare_chunk_dir(chunk_index, chunk_frame_paths)
+            print(
+                "[Progress] RealBasicVSR inference chunk: {0}, frames={1}".format(
+                    chunk_index,
+                    len(chunk_frame_paths),
+                ),
+                flush=True,
+            )
+            command = self.__inference_command(chunk_dir)
+            self.__run_inference_process(command, env, total_frames, started_at)
+
+        print(
+            "[Progress] RealBasicVSR inference: finished. output_frames={0}".format(
+                self.__count_pngs(self.__output_frames_dir)
+            ),
+            flush=True,
+        )
+
+    def __run_inference_process(self, command, env, total_frames, started_at):
         process = subprocess.Popen(
             command,
             cwd=self.__repo_dir,
             env=env,
         )
-        started_at = time.monotonic()
         last_logged_at = started_at - self.__progress_interval_seconds
         last_logged_count = -1
 
@@ -173,12 +199,42 @@ class RealBasicVSREnhancer:
                 break
             time.sleep(max(self.__progress_interval_seconds, 1))
 
-        print(
-            "[Progress] RealBasicVSR inference: finished. output_frames={0}".format(
-                self.__count_pngs(self.__output_frames_dir)
-            ),
-            flush=True,
+    def __inference_command(self, input_frames_dir):
+        return [
+            "python",
+            self.__script_path(),
+            self.__inference_config_path(),
+            self.__checkpoint_path,
+            input_frames_dir,
+            self.__output_frames_dir,
+            "--max_seq_len={0}".format(self.__max_seq_len),
+            "--is_save_as_png=True",
+            "--fps={0}".format(self.__fps),
+        ]
+
+    def __prepare_chunk_dir(self, chunk_index, frame_paths):
+        chunk_dir = os.path.join(
+            self.__chunks_dir,
+            "{0:06d}".format(chunk_index),
         )
+        if os.path.exists(chunk_dir):
+            shutil.rmtree(chunk_dir)
+        Directory.create(chunk_dir)
+        for frame_path in frame_paths:
+            link_path = os.path.join(chunk_dir, os.path.basename(frame_path))
+            try:
+                os.symlink(frame_path, link_path)
+            except OSError:
+                shutil.copy2(frame_path, link_path)
+        return chunk_dir
+
+    @staticmethod
+    def __chunks(items, size):
+        for index in range(0, len(items), size):
+            yield items[index : index + size]
+
+    def __input_frame_paths(self):
+        return sorted(glob.glob(os.path.join(self.__input_frames_dir, "*.png")))
 
     def __print_inference_progress(self, completed_frames, total_frames, elapsed_seconds):
         fps = completed_frames / elapsed_seconds if elapsed_seconds > 0 else 0
