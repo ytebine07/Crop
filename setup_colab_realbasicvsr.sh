@@ -31,11 +31,22 @@ cp -r "${MMEDIT_TMP_DIR}/mmedit-0.16.1/mmedit" "${SITE_PACKAGES}/mmedit"
 MMEDIT_SITE_PACKAGES="${SITE_PACKAGES}/mmedit"
 cat > "${MMEDIT_SITE_PACKAGES}/core/__init__.py" <<'PY'
 # Crop Colab compatibility patch.
-# RealBasicVSR inference only needs tensor2img. Avoid importing training and
-# evaluation utilities that pull legacy NumPy aliases and extra dependencies.
+# Avoid importing heavyweight training/evaluation utilities. BasicRestorer
+# imports psnr, ssim, and InceptionV3 at module import time, but RealBasicVSR
+# inference does not use metrics because Crop writes an inference-only config.
 from .misc import tensor2img
 
-__all__ = ['tensor2img']
+def psnr(*args, **kwargs):
+    raise RuntimeError('PSNR is unavailable in Crop inference mode.')
+
+def ssim(*args, **kwargs):
+    raise RuntimeError('SSIM is unavailable in Crop inference mode.')
+
+class InceptionV3:
+    def __init__(self, *args, **kwargs):
+        raise RuntimeError('InceptionV3 is unavailable in Crop inference mode.')
+
+__all__ = ['tensor2img', 'psnr', 'ssim', 'InceptionV3']
 PY
 
 cat > "${MMEDIT_SITE_PACKAGES}/models/__init__.py" <<'PY'
@@ -54,6 +65,13 @@ __all__ = [
     'BACKBONES', 'COMPONENTS', 'LOSSES', 'MODELS', 'BasicVSRNet',
     'RealBasicVSRNet', 'RealBasicVSR'
 ]
+PY
+
+cat > "${MMEDIT_SITE_PACKAGES}/models/restorers/__init__.py" <<'PY'
+# Crop Colab compatibility patch.
+from .real_basicvsr import RealBasicVSR
+
+__all__ = ['RealBasicVSR']
 PY
 
 cat > "${MMEDIT_SITE_PACKAGES}/models/backbones/__init__.py" <<'PY'
