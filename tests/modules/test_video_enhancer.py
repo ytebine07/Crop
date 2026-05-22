@@ -74,9 +74,15 @@ class TestVideoEnhancer(unittest.TestCase):
             self.assertEqual(commands[0][0:4], ["ffmpeg", "-y", "-i", "cropped_raw.mp4"])
             inference_command = popen_mock.call_args.args[0]
             self.assertEqual(
-                inference_command[0:4],
-                ["python", script_path, config_path, checkpoint_path],
+                inference_command[0:2],
+                ["python", script_path],
             )
+            self.assertEqual(inference_command[3], checkpoint_path)
+            self.assertNotEqual(inference_command[2], config_path)
+            with open(inference_command[2]) as inference_config:
+                inference_config_content = inference_config.read()
+            self.assertIn("model['discriminator'] = None", inference_config_content)
+            self.assertIn("model['perceptual_loss'] = None", inference_config_content)
             self.assertIn("--max_seq_len=12", inference_command)
             self.assertIn("--is_save_as_png=True", inference_command)
             self.assertIn("--fps=29.97", inference_command)

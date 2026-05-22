@@ -28,6 +28,50 @@ tar -xzf "${MMEDIT_TMP_DIR}/mmedit-0.16.1.tar.gz" -C "${MMEDIT_TMP_DIR}"
 rm -rf "${SITE_PACKAGES}/mmedit"
 cp -r "${MMEDIT_TMP_DIR}/mmedit-0.16.1/mmedit" "${SITE_PACKAGES}/mmedit"
 
+MMEDIT_SITE_PACKAGES="${SITE_PACKAGES}/mmedit"
+cat > "${MMEDIT_SITE_PACKAGES}/core/__init__.py" <<'PY'
+# Crop Colab compatibility patch.
+# RealBasicVSR inference only needs tensor2img. Avoid importing training and
+# evaluation utilities that pull legacy NumPy aliases and extra dependencies.
+from .misc import tensor2img
+
+__all__ = ['tensor2img']
+PY
+
+cat > "${MMEDIT_SITE_PACKAGES}/models/__init__.py" <<'PY'
+# Crop Colab compatibility patch.
+# Import only the modules needed for RealBasicVSR inference. The original
+# mmedit package imports every model family, including modules that require
+# mmcv-full CUDA extensions unavailable on current Colab Python.
+from .builder import build, build_backbone, build_component, build_loss, build_model
+from .registry import BACKBONES, COMPONENTS, LOSSES, MODELS
+from .backbones.sr_backbones.basicvsr_net import BasicVSRNet
+from .backbones.sr_backbones.real_basicvsr_net import RealBasicVSRNet
+from .restorers.real_basicvsr import RealBasicVSR
+
+__all__ = [
+    'build', 'build_backbone', 'build_component', 'build_loss', 'build_model',
+    'BACKBONES', 'COMPONENTS', 'LOSSES', 'MODELS', 'BasicVSRNet',
+    'RealBasicVSRNet', 'RealBasicVSR'
+]
+PY
+
+cat > "${MMEDIT_SITE_PACKAGES}/models/backbones/__init__.py" <<'PY'
+# Crop Colab compatibility patch.
+from .sr_backbones.basicvsr_net import BasicVSRNet
+from .sr_backbones.real_basicvsr_net import RealBasicVSRNet
+
+__all__ = ['BasicVSRNet', 'RealBasicVSRNet']
+PY
+
+cat > "${MMEDIT_SITE_PACKAGES}/models/backbones/sr_backbones/__init__.py" <<'PY'
+# Crop Colab compatibility patch.
+from .basicvsr_net import BasicVSRNet
+from .real_basicvsr_net import RealBasicVSRNet
+
+__all__ = ['BasicVSRNet', 'RealBasicVSRNet']
+PY
+
 mkdir -p "$(dirname "${CHECKPOINT_PATH}")"
 if [ ! -s "${CHECKPOINT_PATH}" ]; then
     gdown "${CHECKPOINT_FILE_ID}" -O "${CHECKPOINT_PATH}"

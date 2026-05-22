@@ -125,7 +125,7 @@ class RealBasicVSREnhancer:
         command = [
             "python",
             self.__script_path(),
-            self.__resolve_repo_path(self.__config_path),
+            self.__inference_config_path(),
             self.__checkpoint_path,
             self.__input_frames_dir,
             self.__output_frames_dir,
@@ -263,6 +263,29 @@ class RealBasicVSREnhancer:
         env["PYTHONPATH"] = self.__prepend_path(compat_dir, env.get("PYTHONPATH", ""))
         env["PYTHONUNBUFFERED"] = "1"
         return env
+
+    def __inference_config_path(self):
+        source_config_path = self.__resolve_repo_path(self.__config_path)
+        config_path = os.path.join(self.__workdir, "realbasicvsr_inference_config.py")
+        with open(source_config_path) as source_config:
+            config_content = source_config.read()
+        with open(config_path, "w") as inference_config:
+            inference_config.write(config_content)
+            inference_config.write(
+                "\n".join(
+                    [
+                        "",
+                        "# Crop inference override: avoid constructing training-only modules.",
+                        "model['discriminator'] = None",
+                        "model['gan_loss'] = None",
+                        "model['pixel_loss'] = None",
+                        "model['cleaning_loss'] = None",
+                        "model['perceptual_loss'] = None",
+                        "",
+                    ]
+                )
+            )
+        return config_path
 
     @staticmethod
     def __prepend_path(path, current):
