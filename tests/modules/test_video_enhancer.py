@@ -90,6 +90,10 @@ class TestVideoEnhancer(unittest.TestCase):
             compat_path = os.path.join(tempdir, "realbasicvsr_py_compat")
             self.assertTrue(inference_env["PYTHONPATH"].startswith(compat_path))
             self.assertEqual(inference_env["PYTHONUNBUFFERED"], "1")
+            self.assertEqual(
+                inference_env["PYTORCH_ALLOC_CONF"],
+                "expandable_segments:True",
+            )
             with open(os.path.join(compat_path, "sitecustomize.py")) as sitecustomize:
                 sitecustomize_content = sitecustomize.read()
             self.assertIn("ImpImporter", sitecustomize_content)
@@ -100,6 +104,16 @@ class TestVideoEnhancer(unittest.TestCase):
             self.assertIn("-crf", commands[1])
             self.assertIn(str(Const.VIDEO_CRF), commands[1])
             self.assertEqual(commands[1][-1], "nosound.mp4")
+
+    def test_realbasicvsr_uses_colab_safe_default_sequence_length(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            enhancer = RealBasicVSREnhancer(workdir="/tmp/work", fps=30)
+
+        self.assertEqual(
+            enhancer._RealBasicVSREnhancer__max_seq_len,
+            Const.REAL_BASIC_VSR_MAX_SEQ_LEN,
+        )
+        self.assertLessEqual(Const.REAL_BASIC_VSR_MAX_SEQ_LEN, 5)
 
     def test_realbasicvsr_logs_inference_progress(self):
         with tempfile.TemporaryDirectory() as tempdir:
@@ -200,6 +214,61 @@ class TestVideoEnhancer(unittest.TestCase):
             self.assertTrue(input_dirs[0].endswith("realbasicvsr_chunks/000001"))
             self.assertTrue(input_dirs[1].endswith("realbasicvsr_chunks/000002"))
             self.assertTrue(input_dirs[2].endswith("realbasicvsr_chunks/000003"))
+
+    def test_realbasicvsr_retries_failed_chunk_with_smaller_chunks(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            repo_dir = os.path.join(tempdir, "RealBasicVSR")
+            config_dir = os.path.join(repo_dir, "configs")
+            checkpoint_path = os.path.join(repo_dir, "weights", "model.pth")
+            os.makedirs(config_dir)
+            os.makedirs(os.path.dirname(checkpoint_path))
+            script_path = os.path.join(repo_dir, "inference_realbasicvsr.py")
+            config_path = os.path.join(config_dir, "config.py")
+            for path in (script_path, config_path, checkpoint_path):
+                with open(path, "w") as file:
+                    file.write("placeholder")
+
+            source_dir = os.path.join(tempdir, "source_frames")
+            os.makedirs(source_dir)
+            frame_paths = []
+            for index in range(4):
+                frame_path = os.path.join(source_dir, "{0:08d}.png".format(index + 1))
+                with open(frame_path, "w") as file:
+                    file.write("frame")
+                frame_paths.append(frame_path)
+
+            enhancer = RealBasicVSREnhancer(
+                workdir=tempdir,
+                fps=30,
+                repo_dir=repo_dir,
+                config_path=config_path,
+                checkpoint_path=checkpoint_path,
+                max_seq_len=4,
+            )
+
+            failed_process = mock.Mock()
+            failed_process.poll.return_value = 1
+            successful_process = mock.Mock()
+            successful_process.poll.return_value = 0
+
+            def fake_glob(pattern):
+                if "realbasicvsr_input" in pattern:
+                    return frame_paths
+                if "realbasicvsr_output" in pattern:
+                    return ["output.png"]
+                return []
+
+            with mock.patch("modules.video_enhancer.glob.glob", side_effect=fake_glob):
+                with mock.patch("modules.video_enhancer.subprocess.run"):
+                    with mock.patch(
+                        "modules.video_enhancer.subprocess.Popen",
+                        side_effect=[failed_process, successful_process, successful_process],
+                    ) as popen_mock:
+                        enhancer.enhance("cropped_raw.mp4", "nosound.mp4")
+
+            self.assertEqual(popen_mock.call_count, 3)
+            retried_input_dirs = [call.args[0][4] for call in popen_mock.call_args_list[1:]]
+            self.assertTrue(all(path.endswith("realbasicvsr_chunks/000001") for path in retried_input_dirs))
 
     def test_realbasicvsr_fails_when_repo_is_missing(self):
         with tempfile.TemporaryDirectory() as tempdir:

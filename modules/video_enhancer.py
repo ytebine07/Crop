@@ -149,16 +149,13 @@ class RealBasicVSREnhancer:
             self.__chunks(input_frame_paths, self.__max_seq_len),
             start=1,
         ):
-            chunk_dir = self.__prepare_chunk_dir(chunk_index, chunk_frame_paths)
-            print(
-                "[Progress] RealBasicVSR inference chunk: {0}, frames={1}".format(
-                    chunk_index,
-                    len(chunk_frame_paths),
-                ),
-                flush=True,
+            self.__run_inference_chunk(
+                chunk_index,
+                chunk_frame_paths,
+                env,
+                total_frames,
+                started_at,
             )
-            command = self.__inference_command(chunk_dir)
-            self.__run_inference_process(command, env, total_frames, started_at)
 
         print(
             "[Progress] RealBasicVSR inference: finished. output_frames={0}".format(
@@ -166,6 +163,53 @@ class RealBasicVSREnhancer:
             ),
             flush=True,
         )
+
+    def __run_inference_chunk(
+        self,
+        chunk_index,
+        chunk_frame_paths,
+        env,
+        total_frames,
+        started_at,
+    ):
+        chunk_dir = self.__prepare_chunk_dir(chunk_index, chunk_frame_paths)
+        print(
+            "[Progress] RealBasicVSR inference chunk: {0}, frames={1}".format(
+                chunk_index,
+                len(chunk_frame_paths),
+            ),
+            flush=True,
+        )
+        command = self.__inference_command(chunk_dir)
+        try:
+            self.__run_inference_process(command, env, total_frames, started_at)
+        except subprocess.CalledProcessError:
+            if len(chunk_frame_paths) <= 1:
+                raise
+            self.__remove_output_frames(chunk_frame_paths)
+            midpoint = len(chunk_frame_paths) // 2
+            print(
+                "[Progress] RealBasicVSR inference chunk: {0} failed; retry with {1}+{2} frames.".format(
+                    chunk_index,
+                    midpoint,
+                    len(chunk_frame_paths) - midpoint,
+                ),
+                flush=True,
+            )
+            self.__run_inference_chunk(
+                chunk_index,
+                chunk_frame_paths[:midpoint],
+                env,
+                total_frames,
+                started_at,
+            )
+            self.__run_inference_chunk(
+                chunk_index,
+                chunk_frame_paths[midpoint:],
+                env,
+                total_frames,
+                started_at,
+            )
 
     def __run_inference_process(self, command, env, total_frames, started_at):
         process = subprocess.Popen(
@@ -235,6 +279,15 @@ class RealBasicVSREnhancer:
 
     def __input_frame_paths(self):
         return sorted(glob.glob(os.path.join(self.__input_frames_dir, "*.png")))
+
+    def __remove_output_frames(self, input_frame_paths):
+        for input_frame_path in input_frame_paths:
+            output_frame_path = os.path.join(
+                self.__output_frames_dir,
+                os.path.basename(input_frame_path),
+            )
+            if os.path.exists(output_frame_path):
+                os.remove(output_frame_path)
 
     def __print_inference_progress(self, completed_frames, total_frames, elapsed_seconds):
         fps = completed_frames / elapsed_seconds if elapsed_seconds > 0 else 0
@@ -318,6 +371,7 @@ class RealBasicVSREnhancer:
             )
         env["PYTHONPATH"] = self.__prepend_path(compat_dir, env.get("PYTHONPATH", ""))
         env["PYTHONUNBUFFERED"] = "1"
+        env.setdefault("PYTORCH_ALLOC_CONF", "expandable_segments:True")
         return env
 
     def __inference_config_path(self):

@@ -89,8 +89,12 @@ If your RealBasicVSR checkout or checkpoint is in a different location, set:
 REAL_BASIC_VSR_REPO=/content/RealBasicVSR
 REAL_BASIC_VSR_CONFIG=configs/realbasicvsr_x4.py
 REAL_BASIC_VSR_CHECKPOINT=/content/RealBasicVSR/checkpoints/RealBasicVSR_x4.pth
-REAL_BASIC_VSR_MAX_SEQ_LEN=30
+REAL_BASIC_VSR_MAX_SEQ_LEN=5
 ```
+
+`REAL_BASIC_VSR_MAX_SEQ_LEN` controls how many frames are sent to each
+RealBasicVSR inference process. Lower it, for example to `1` or `2`, if Colab
+reports CUDA out-of-memory errors.
 
 ## Usage
 
