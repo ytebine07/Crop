@@ -1,12 +1,11 @@
-cython
-pillow>=7.0.0
-numpy>=1.18.1
-opencv-python>=4.1.2
-pytest==7.1.3
-tqdm==4.64.1
-scipy>=1.7.3
-matplotlib>=3.4.3
-mock==4.0.3
-
+# Colab already ships core scientific/GPU packages such as numpy, pillow,
+# opencv-python, scipy, matplotlib, torch, torchvision, and tqdm. Installing
+# or pinning them here can replace loaded Colab packages and repeatedly prompt
+# for a runtime restart. Keep this file to missing runtime packages.
 imageai==3.0.3
 ffmpeg-python==0.2.0
+gdown
+addict
+yapf
+lmdb
+av

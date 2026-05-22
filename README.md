@@ -47,6 +47,11 @@ To install the Colab dependencies:
 pip install -r requirements-colab.txt
 ```
 
+`requirements-colab.txt` intentionally avoids reinstalling Colab's preloaded
+core packages such as numpy, OpenCV, PyTorch, scipy, matplotlib, and tqdm. This
+keeps the install to missing top-level packages and avoids repeated runtime
+restart prompts.
+
 Colab must use a GPU runtime. Verify PyTorch can see CUDA before running Crop:
 
 ```
@@ -71,6 +76,7 @@ RealBasicVSR repository in Colab and run Crop with `CROP_ENHANCER=realbasicvsr`:
 
 ```
 cd /content/Crop
+pip install -r requirements-colab.txt
 chmod 755 ./setup_colab_realbasicvsr.sh
 ./setup_colab_realbasicvsr.sh
 
