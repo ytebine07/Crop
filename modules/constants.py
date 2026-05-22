@@ -46,6 +46,7 @@ class Constants:
     REAL_BASIC_VSR_CONFIG = "configs/realbasicvsr_x4.py"
     REAL_BASIC_VSR_CHECKPOINT = "/content/RealBasicVSR/checkpoints/RealBasicVSR_x4.pth"
     REAL_BASIC_VSR_MAX_SEQ_LEN = 30
+    REAL_BASIC_VSR_PROGRESS_INTERVAL_SECONDS = 10
 
     REAL_ESRGAN_OUTSCALE = 4
     REAL_ESRGAN_TILE = 0

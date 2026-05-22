@@ -1,6 +1,7 @@
 import glob
 import os
 import subprocess
+import time
 
 from modules.constants import Constants as Const
 from modules.dir import Directory
@@ -36,6 +37,7 @@ class RealBasicVSREnhancer:
         config_path=None,
         checkpoint_path=None,
         max_seq_len=None,
+        progress_interval_seconds=None,
     ):
         self.__workdir = workdir
         self.__fps = fps
@@ -57,6 +59,11 @@ class RealBasicVSREnhancer:
                 Const.REAL_BASIC_VSR_MAX_SEQ_LEN_ENV,
                 Const.REAL_BASIC_VSR_MAX_SEQ_LEN,
             )
+        )
+        self.__progress_interval_seconds = float(
+            progress_interval_seconds
+            if progress_interval_seconds is not None
+            else Const.REAL_BASIC_VSR_PROGRESS_INTERVAL_SECONDS
         )
         self.__input_frames_dir = os.path.join(workdir, "realbasicvsr_input")
         self.__output_frames_dir = os.path.join(workdir, "realbasicvsr_output")
@@ -87,12 +94,15 @@ class RealBasicVSREnhancer:
         Directory.create(self.__input_frames_dir)
         Directory.create(self.__output_frames_dir)
 
+        print("[Progress] RealBasicVSR: start video enhancement.", flush=True)
         self.__extract_frames(input_video_path)
         self.__run_inference()
         self.__encode_video(output_video_path)
+        print("[Progress] RealBasicVSR: finished video enhancement.", flush=True)
         return output_video_path
 
     def __extract_frames(self, input_video_path: str):
+        print("[Progress] RealBasicVSR extract frames: start.", flush=True)
         subprocess.run(
             [
                 "ffmpeg",
@@ -103,25 +113,116 @@ class RealBasicVSREnhancer:
             ],
             check=True,
         )
+        print(
+            "[Progress] RealBasicVSR extract frames: {0} frames ready.".format(
+                self.__count_pngs(self.__input_frames_dir)
+            ),
+            flush=True,
+        )
 
     def __run_inference(self):
         env = self.__subprocess_env()
-        subprocess.run(
-            [
-                "python",
-                self.__script_path(),
-                self.__resolve_repo_path(self.__config_path),
-                self.__checkpoint_path,
-                self.__input_frames_dir,
-                self.__output_frames_dir,
-                "--max_seq_len={0}".format(self.__max_seq_len),
-                "--is_save_as_png=True",
-                "--fps={0}".format(self.__fps),
-            ],
-            check=True,
+        command = [
+            "python",
+            self.__script_path(),
+            self.__resolve_repo_path(self.__config_path),
+            self.__checkpoint_path,
+            self.__input_frames_dir,
+            self.__output_frames_dir,
+            "--max_seq_len={0}".format(self.__max_seq_len),
+            "--is_save_as_png=True",
+            "--fps={0}".format(self.__fps),
+        ]
+        total_frames = self.__count_pngs(self.__input_frames_dir)
+        print(
+            "[Progress] RealBasicVSR inference: start. total_frames={0}, max_seq_len={1}".format(
+                total_frames,
+                self.__max_seq_len,
+            ),
+            flush=True,
+        )
+        process = subprocess.Popen(
+            command,
             cwd=self.__repo_dir,
             env=env,
         )
+        started_at = time.monotonic()
+        last_logged_at = started_at - self.__progress_interval_seconds
+        last_logged_count = -1
+
+        while True:
+            return_code = process.poll()
+            now = time.monotonic()
+            completed_frames = self.__count_pngs(self.__output_frames_dir)
+            should_log = (
+                completed_frames != last_logged_count
+                or now - last_logged_at >= self.__progress_interval_seconds
+                or return_code is not None
+            )
+            if should_log:
+                self.__print_inference_progress(
+                    completed_frames,
+                    total_frames,
+                    now - started_at,
+                )
+                last_logged_at = now
+                last_logged_count = completed_frames
+            if return_code is not None:
+                if return_code != 0:
+                    raise subprocess.CalledProcessError(return_code, command)
+                break
+            time.sleep(max(self.__progress_interval_seconds, 1))
+
+        print(
+            "[Progress] RealBasicVSR inference: finished. output_frames={0}".format(
+                self.__count_pngs(self.__output_frames_dir)
+            ),
+            flush=True,
+        )
+
+    def __print_inference_progress(self, completed_frames, total_frames, elapsed_seconds):
+        fps = completed_frames / elapsed_seconds if elapsed_seconds > 0 else 0
+        if total_frames > 0:
+            percent = completed_frames / total_frames * 100
+            remaining_frames = max(total_frames - completed_frames, 0)
+            eta = self.__format_seconds(remaining_frames / fps if fps > 0 else None)
+            print(
+                "[Progress] RealBasicVSR inference: {0}/{1} ({2:.1f}%), {3:.2f}fps, eta={4}".format(
+                    completed_frames,
+                    total_frames,
+                    percent,
+                    fps,
+                    eta,
+                ),
+                flush=True,
+            )
+            return
+
+        print(
+            "[Progress] RealBasicVSR inference: {0} frames written, elapsed={1}".format(
+                completed_frames,
+                self.__format_seconds(elapsed_seconds),
+            ),
+            flush=True,
+        )
+
+    @staticmethod
+    def __format_seconds(seconds):
+        if seconds is None:
+            return "unknown"
+        seconds = int(seconds)
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        remaining_seconds = seconds % 60
+        if hours > 0:
+            return "{0}h{1:02d}m{2:02d}s".format(hours, minutes, remaining_seconds)
+        if minutes > 0:
+            return "{0}m{1:02d}s".format(minutes, remaining_seconds)
+        return "{0}s".format(remaining_seconds)
+
+    @staticmethod
+    def __count_pngs(directory):
+        return len(glob.glob(os.path.join(directory, "*.png")))
 
     def __subprocess_env(self):
         env = os.environ.copy()
@@ -155,6 +256,7 @@ class RealBasicVSREnhancer:
                 )
             )
         env["PYTHONPATH"] = self.__prepend_path(compat_dir, env.get("PYTHONPATH", ""))
+        env["PYTHONUNBUFFERED"] = "1"
         return env
 
     @staticmethod
@@ -164,9 +266,16 @@ class RealBasicVSREnhancer:
         return path
 
     def __encode_video(self, output_video_path: str):
-        if len(glob.glob(os.path.join(self.__output_frames_dir, "*.png"))) == 0:
+        output_frame_count = self.__count_pngs(self.__output_frames_dir)
+        if output_frame_count == 0:
             raise RuntimeError("RealBasicVSR did not create output frames.")
 
+        print(
+            "[Progress] RealBasicVSR encode video: start. frames={0}".format(
+                output_frame_count
+            ),
+            flush=True,
+        )
         subprocess.run(
             [
                 "ffmpeg",
@@ -194,6 +303,7 @@ class RealBasicVSREnhancer:
             ],
             check=True,
         )
+        print("[Progress] RealBasicVSR encode video: finished.", flush=True)
 
     def __script_path(self):
         return os.path.join(self.__repo_dir, "inference_realbasicvsr.py")
