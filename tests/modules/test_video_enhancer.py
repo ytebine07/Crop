@@ -88,6 +88,8 @@ class TestVideoEnhancer(unittest.TestCase):
                 sitecustomize_content = sitecustomize.read()
             self.assertIn("ImpImporter", sitecustomize_content)
             self.assertIn("'bool': bool", sitecustomize_content)
+            self.assertIn("'bool8': _np.bool_", sitecustomize_content)
+            self.assertIn("if _name not in _np.__dict__", sitecustomize_content)
             self.assertEqual(commands[1][0:4], ["ffmpeg", "-y", "-framerate", "29.97"])
             self.assertIn("-crf", commands[1])
             self.assertIn(str(Const.VIDEO_CRF), commands[1])
